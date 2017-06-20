@@ -15,16 +15,16 @@ File(s) to be generated depends on the supplied WORKPATH directory:
 
   - When 'WORKPATH' is a file, it is used as the template's data source and
     'README.md' is generated in the same folder.
-  - When 'WORKPATH' is a directory and the file 'WORKPATH/appinfo.xml' is found,
+  - When 'WORKPATH' is a directory and the file 'WORKPATH/appdefs.xml' is found,
     'README.md' is generated to 'WORKPATH/README.md'.
   - When 'WORKPATH' is a directory and one or more
-    'WORKPATH/docker-*/appinfo.xml' files are found, a 'README.md' is generated
+    'WORKPATH/docker-*/appdefs.xml' files are found, a 'README.md' is generated
     for each of them and they are written to 'WORKPATH/docker-*/README.md'.
 
 It is assumed that:
   - README.md.j2 Jinja2 template is found under 'template' in this script's
     folder.
-  - commonappinfo.xml template data source file is found under 'template' in
+  - commonappdefs.xml template data source file is found under 'template' in
     this script's folder.
 "
 }
@@ -47,7 +47,7 @@ generate_readme() {
     echo "Generating $README..."
     curl -s https://raw.githubusercontent.com/jlesage/docker-render-template/master/render_template.sh | sh -s \
         "$SCRIPT_DIR/templates/README.md.j2" \
-        "$SCRIPT_DIR/commonappinfo.xml" \
+        "$SCRIPT_DIR/commonappdefs.xml" \
         "$APP_SOURCE_DATA" \
         --force-list "$FORCE_LIST" \
         > "$README"
@@ -72,7 +72,7 @@ generate_unraid_template() {
     echo "Generating $UNRAID_TEMPLATE..."
     curl -s https://raw.githubusercontent.com/jlesage/docker-render-template/master/render_template.sh | sh -s \
         "$SCRIPT_DIR/templates/unraid_template.xml.j2" \
-        "$SCRIPT_DIR/commonappinfo.xml" \
+        "$SCRIPT_DIR/commonappdefs.xml" \
         "$APP_SOURCE_DATA" \
         --force-list "$FORCE_LIST" \
         > "$UNRAID_TEMPLATE"
@@ -90,7 +90,7 @@ if [ "${1:-UNSET}" = "UNSET" ]; then
 fi
 
 # Make sure required files are found.
-[ -f "$SCRIPT_DIR/commonappinfo.xml" ] || die "Common application data source: File not found: $SCRIPT_DIR/commonappinfo.xml"
+[ -f "$SCRIPT_DIR/commonappdefs.xml" ] || die "Common application data source: File not found: $SCRIPT_DIR/commonappdefs.xml"
 [ -f "$SCRIPT_DIR/templates/README.md.j2" ] || die "README.md template: File not found: $SCRIPT_DIR/templates/README.md.j2"
 [ -f "$SCRIPT_DIR/templates/unraid_template.xml.j2" ] || die "unRAID template: File not found: $SCRIPT_DIR/templates/unraid_template.xml.j2"
 
@@ -99,19 +99,19 @@ WORKPATH="$1"
 if [ -f "$WORKPATH" ]; then
     generate_all "$WORKPATH"
 elif [ -d "$WORKPATH" ]; then
-    if [ -f "$WORKPATH/appinfo.xml" ]; then
-        generate_all "$WORKPATH/appinfo.xml"
+    if [ -f "$WORKPATH/appdefs.xml" ]; then
+        generate_all "$WORKPATH/appdefs.xml"
     else
         DATA_SOURCE_FILE_FOUND="$(mktemp)"
         echo 0 > "$DATA_SOURCE_FILE_FOUND"
-        ls "$WORKPATH"/docker-*/appinfo.xml 2>/dev/null | while read -r FILE; do
+        ls "$WORKPATH"/docker-*/appdefs.xml 2>/dev/null | while read -r FILE; do
             generate_all "$FILE"
             echo 1 > "$DATA_SOURCE_FILE_FOUND"
         done
         FOUND="$(cat "$DATA_SOURCE_FILE_FOUND")"
         rm "$DATA_SOURCE_FILE_FOUND"
         if [ "$FOUND" -eq 0 ]; then
-            die "No appinfo.xml file found."
+            die "No appdefs.xml file found."
         fi
     fi
 else
