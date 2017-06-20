@@ -1,0 +1,185 @@
+# Docker container for {{ app.friendly_name }}
+[![Docker Automated build](https://img.shields.io/docker/automated/jlesage/{{ app.name }}.svg)](https://hub.docker.com/r/jlesage/{{ app.name }}/) [![](https://images.microbadger.com/badges/image/jlesage/{{ app.name }}.svg)](http://microbadger.com/#/images/jlesage/{{ app.name }} "Get your own image badge on microbadger.com") [![Build Status](https://travis-ci.org/jlesage/docker-{{ app.name }}.svg?branch=master)](https://travis-ci.org/jlesage/docker-{{ app.name }})
+
+This is a Docker container for {{ app.friendly_name }}.
+{% for item in app.container.overview %}
+
+{{ item }}
+{% endfor %}
+
+---
+
+[![{{ app.friendly_name }} logo](https://images.weserv.nl/?url=raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ app.name }}-icon.png&w=200)]({{ app.project_url }})
+[![{{ app.friendly_name }}](https://dummyimage.com/400x110/ffffff/575757&text={{ app.friendly_name }})]({{ app.project_url }})
+
+{{ app.project.description }}
+
+---
+
+## Quick Start
+
+Launch the {{ app.friendly_name }} docker container with the following command:
+```
+docker run -d --rm \
+    --name={{ app.name }} \
+    -p 5800:5800 \
+    -p 5900:5900 \
+{% for item in app.container.volume %}
+  {% if item.include_in_quick_start == 'true' %}
+    -v {{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }} \
+  {% endif %}
+{% endfor %}
+{% for item in app.container.device %}
+  {% if item.include_in_quick_start == 'true' %}
+    --device {{ item.path }} \
+  {% endif %}
+{% endfor %}
+    jlesage/{{ app.name }}
+```
+
+Where:
+{% for item in app.container.volume %}
+  {% if item.include_in_quick_start == 'true' %}
+  - `{{ item.host_path_example }}`: {{ item.description }}
+  {% endif %}
+{% endfor %}
+{% for item in app.container.device %}
+  {% if item.include_in_quick_start == 'true' %}
+  - `{{ item.path }}`: {{ item.description }}
+  {% endif %}
+{% endfor %}
+
+Browse to `http://your-host-ip:5800` to access the {{ app.friendly_name }} GUI.  Files from
+the host appear under the `/storage` folder in the container.
+
+## Usage
+
+```
+docker run [-d] [--rm] \
+    --name={{ app.name }} \
+    [-e <VARIABLE_NAME>=<VALUE>]... \
+    [-v <HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]]... \
+    [-p <HOST_PORT>:<CONTAINER_PORT>]... \
+    jlesage/{{ app.name }}
+```
+| Parameter | Description |
+|-----------|-------------|
+| -d        | Run the container in background.  If not set, the container runs in foreground. |
+| --rm      | Automatically remove the container when it exits. |
+| -e        | Pass an environment variable to the container.  See the [Environment Variables](#environment-variables) section for more details. |
+| -v        | Set a volume mapping (allows to share a folder/file between the host and the container).  See the [Data Volumes](#data-volumes) section for more details. |
+| -p        | Set a network port mapping (exposes an internal container port to the host).  See the [Ports](#ports) section for more details. |
+
+### Environment Variables
+
+To customize some properties of the container, the following environment
+variables can be passed via the `-e` parameter (one for each variable).  Value
+of this parameter has the format `<VARIABLE_NAME>=<VALUE>`.
+
+| Variable       | Description                                  | Default |
+|----------------|----------------------------------------------|---------|
+{% for item in app.container.environment_variable %}
+|`{{ item.name }}`| {{ item.description }} | {% if item.default %}`{{ item.default }}`{% else %}(unset){% endif %} |
+{% endfor %}
+
+### Data Volumes
+
+The following table describes data volumes used by the container.  The mappings
+are set via the `-v` parameter.  Each mapping is specified with the following
+format: `<HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]`.
+
+| Container path  | Permissions | Description |
+|-----------------|-------------|-------------|
+{% for item in app.container.volume %}
+  {% if item.description %}
+|`{{ item.container_path }}`| {{ item.permissions }} | {{ item.description }} |
+  {% endif %}
+{% endfor %}
+
+### Ports
+
+Here is the list of ports used by the container.  They can be mapped to the host
+via the `-p` parameter (one per port mapping).  Each mapping is defined in the
+following format: `<HOST_PORT>:<CONTAINER_PORT>`.  The port number inside the
+container cannot be changed, but you are free to use any port on the host side.
+
+| Port | Mapping to host | Description |
+|------|-----------------|-------------|
+{% for item in app.container.port %}
+| {{ item.number }} | {{ 'Mandatory' if item.mandatory == 'true' else 'Optional' }} | {{ item.description }} |
+{% endfor %}
+
+## User/Group IDs
+
+When using data volumes (`-v` flags), permissions issues can occur between the
+host and the container.  For example, the user within the container may not
+exists on the host.  This could prevent the host from properly accessing files
+and folders on the shared volume.
+
+To avoid any problem, you can specify the user the application should run as.
+
+This is done by passing the user ID and group ID to the container via the
+`USER_ID` and `GROUP_ID` environment variables.
+
+To find the right IDs to use, issue the following command on the host, with the
+user owning the data volume on the host:
+
+    id <username>
+
+Which gives an output like this one:
+```
+uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),46(plugdev),113(lpadmin)
+```
+
+The value of `uid` (user ID) and `gid` (group ID) are the ones that you should
+be given the container.
+
+## Accessing the GUI
+
+Assuming the host is mapped to the same ports as the container, the graphical
+interface of the application can be accessed via:
+
+  * A web browser:
+```
+http://<HOST IP ADDR>:5800
+```
+
+  * Any VNC client:
+```
+<HOST IP ADDR>:5900
+```
+
+If different ports are mapped to the host, make sure they respect the
+following formula:
+
+    VNC_PORT = HTTP_PORT + 100
+
+This is to make sure accessing the GUI with a web browser can be done without
+specifying the VNC port manually.  If this is not possible, then specify
+explicitly the VNC port like this:
+
+    http://<HOST IP ADDR>:5800/?port=<VNC PORT>
+
+## VNC Password
+
+To restrict access to your application, a password can be specified.  This can
+be done via two methods:
+  * By using the `VNC_PASSWORD` environment variable.
+  * By creating a `.vncpass_clear` file at the root of the `/config` volume.
+  This file should contains the password (in clear).  During the container
+  startup, content of the file is obfuscated and renamed to `.vncpass`.
+
+**NOTE**: This is a very basic way to restrict access to the application and it
+should not be considered as secure in any way.
+{% for item in app.documentation.section %}
+
+{% for i in range(item.title['@level']|int) %}#{% endfor %} {{ item.title['#text'] }}
+  {% if item.content %}
+
+{{ item.content }}
+  {% endif %}
+{% endfor %}
+
+{% for item in app.documentation.link %}
+[{{ item.name }}]: {{ item.url }}
+{% endfor %}

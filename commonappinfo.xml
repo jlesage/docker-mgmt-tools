@@ -1,0 +1,153 @@
+<!--
+Common Docker container application definitions.
+
+This file is used as data source to generate README.md and unRAID template files
+from Jinja2 templates.
+-->
+<app>
+  <container>
+    <overview>The GUI of the application is accessed through a modern web browser (no installation or configuration needed on client side) or via any VNC client.</overview>
+    <!-- Environment variables -->
+    <environment_variable>
+      <name>USER_ID</name>
+      <description>ID of the user the application runs as.  See [User/Group IDs](#usergroup-ids) to better understand when this should be set.</description>
+      <default>1000</default>
+      <unraid_template>
+        <title>User ID</title>
+        <description>ID of the user the application runs as.</description>
+        <default>99</default>
+        <display>advanced-hide</display>
+        <required>true</required>
+        <mask>false</mask>
+      </unraid_template>
+    </environment_variable>
+    <environment_variable>
+      <name>GROUP_ID</name>
+      <description>ID of the group the application runs as.  See [User/Group IDs](#usergroup-ids) to better understand when this should be set.</description>
+      <default>1000</default>
+      <unraid_template>
+        <title>Group ID</title>
+        <description>ID of the group the application runs as.</description>
+        <default>100</default>
+        <display>advanced-hide</display>
+        <required>true</required>
+        <mask>false</mask>
+      </unraid_template>
+    </environment_variable>
+    <environment_variable>
+      <name>TZ</name>
+      <description>[TimeZone] of the container.  Timezone can also be set by mapping `/etc/localtime` between the host and the container.</description>
+      <default>Etc/UTC</default>
+    </environment_variable>
+    <environment_variable>
+      <name>DISPLAY_WIDTH</name>
+      <description>Width (in pixels) of the application's window.</description>
+      <default>1280</default>
+      <unraid_template>
+        <title>Display Width</title>
+        <display>advanced</display>
+        <required>false</required>
+        <mask>false</mask>
+      </unraid_template>
+    </environment_variable>
+    <environment_variable>
+      <name>DISPLAY_HEIGHT</name>
+      <description>Height (in pixels) of the application's window.</description>
+      <default>768</default>
+      <unraid_template>
+        <title>Display Height</title>
+        <display>advanced</display>
+        <required>false</required>
+        <mask>false</mask>
+      </unraid_template>
+    </environment_variable>
+      <environment_variable>
+      <name>VNC_PASSWORD</name>
+      <description>Password needed to connect to the application's GUI.  See the [VNC Pasword](#vnc-password) section for more details.</description>
+      <default/>
+    </environment_variable>
+    <environment_variable>
+      <name>KEEP_GUIAPP_RUNNING</name>
+      <description>When set to `1`, the application will be automatically restarted if it crashes or if user quits it.</description>
+      <default>0</default>
+    </environment_variable>
+    <environment_variable>
+      <name>APP_NICENESS</name>
+      <description>Priority at which the application should run.  A niceness value of -20 is the highest priority and 19 is the lowest priority.  By default, niceness is not set, meaning that the default niceness of 0 is used.  **NOTE**: A negative niceness (priority increase) requires additional permissions.  In this case, the container should be run with the docker option `--cap-add=SYS_NICE`.</description>
+      <default/>
+      <unraid_template>
+        <title>Niceness (priority)</title>
+        <description>Priority at which the application should run.  A niceness value of -20 is the highest priority and 19 is the lowest priority.[br][b]NOTE:[/b] Setting a negative value requires additional permissions.  Thus, [i][b]--cap-add=SYS_NICE[/b][/i] must be added in [i]Extra Parameters[/i] (shown when [i]Advanced View[/i] is enabled).</description>
+        <display>advanced</display>
+        <required>false</required>
+        <mask>false</mask>
+      </unraid_template>
+    </environment_variable>
+    <!-- Volumes -->
+    <volume>
+      <container_path>/config</container_path>
+      <host_path_example>/docker/appdata/{{ app.name }}</host_path_example>
+      <description>This is where the application stores its configuration, log and any files needing persistency.</description>
+      <permissions>rw</permissions>
+      <include_in_quick_start>true</include_in_quick_start>
+      <unraid_template>
+        <title>Config Directory</title>
+        <description>This is where the application stores its configuration, log and any files needing persistency.[br]Container path: /config</description>
+        <default>/mnt/user/appdata/{{ app.name }}</default>
+        <display>advanced-hide</display>
+        <required>true</required>
+        <mask>false</mask>
+      </unraid_template>
+    </volume>
+    <volume>
+      <container_path>/storage</container_path>
+      <host_path_example>$HOME</host_path_example>
+      <description>This location contains files from your host that need to be accessible by the application.</description>
+      <permissions>{{ app.container.storage_permissions }}</permissions>
+      <include_in_quick_start>true</include_in_quick_start>
+      <unraid_template>
+        <title>Storage</title>
+        <description>This location contains files from your host that need to be accessible by the application.[br]Container path: /storage</description>
+        <default>/mnt/user</default>
+        <display>always-hide</display>
+        <required>true</required>
+        <mask>false</mask>
+      </unraid_template>
+    </volume>
+    <!-- Network ports -->
+    <port>
+      <number>5800</number>
+      <protocol>tcp</protocol>
+      <description>Port used to access the application's GUI via the web interface.</description>
+      <mandatory>true</mandatory>
+      <unraid_template>
+        <title>WEB Port for GUI</title>
+        <default>{{ 7800 + app.id|int }}</default>
+        <display>advanced-hide</display>
+        <required>true</required>
+        <mask>false</mask>
+      </unraid_template>
+    </port>
+    <port>
+      <number>5900</number>
+      <protocol>tcp</protocol>
+      <description>Port used to access the application's GUI via the VNC protocol.</description>
+      <mandatory>true</mandatory>
+      <unraid_template>
+        <title>VNC Port for GUI</title>
+        <description>Port used to access the application's GUI via the VNC protocol.[br]Make sure this port is equal to the WEB GUI port + 100.</description>
+        <default>{{ 7900 + app.id|int }}</default>
+        <display>advanced-hide</display>
+        <required>true</required>
+        <mask>false</mask>
+      </unraid_template>
+    </port>
+  </container>
+  <!-- Extra stuff to be added to the documentation. -->
+  <documentation>
+    <link>
+      <name>TimeZone</name>
+      <url>http://en.wikipedia.org/wiki/List_of_tz_database_time_zones</url>
+    </link>
+  </documentation>
+</app>
