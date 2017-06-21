@@ -9,23 +9,39 @@ FORCE_LIST="environment_variable,volume,port,change,link,section,release,overvie
 usage() {
     echo "usage: $(basename $0) WORKPATH
 
-Generate the README.md and unRAID template of one or multiple Docker containers.
+Generate the README.md and unRAID template of one or multiple Docker container
+for GUI applications.
 
-File(s) to be generated depends on the supplied WORKPATH directory:
+WORKPATH can be:
+  1) The path to the 'appdefs.xml' template data source file.
+  2) The directory in which 'appdefs.xml' template data source file can be found.
+  3) The directory in which 'docker-*/appdefs.xml' template data source file(s)
+    can be found.
 
-  - When 'WORKPATH' is a file, it is used as the template's data source and
-    'README.md' is generated in the same folder.
-  - When 'WORKPATH' is a directory and the file 'WORKPATH/appdefs.xml' is found,
-    'README.md' is generated to 'WORKPATH/README.md'.
-  - When 'WORKPATH' is a directory and one or more
-    'WORKPATH/docker-*/appdefs.xml' files are found, a 'README.md' is generated
-    for each of them and they are written to 'WORKPATH/docker-*/README.md'.
-
-It is assumed that:
-  - README.md.j2 Jinja2 template is found under 'template' in this script's
-    folder.
-  - commonappdefs.xml template data source file is found under 'template' in
-    this script's folder.
+Expected directory structure:
+  root/ (3)
+  ├── $(basename "$SCRIPT_DIR")/
+  │   ├── templates/
+  │   │   ├── README.md.j2             <--  Jinja2 template for documentation.
+  │   │   └── unraid_templates.xml.j2  <--  Jinja2 template for unRAID template.
+  │   ├── render_templates.sh          <--  This script.
+  │   └── commonappdefs.xml            <--  Common template data source.
+  ├── docker-templates/                <--  unRAID templates directory.
+  │   └── jlesage/
+  │       ├── app1.xml                 <--+ Generated unRAID template.
+  │       ├── app2.xml
+  │       ├── ...
+  │       └── appX.xml
+  ├── docker-app1/ (2)                 <--  App's docker container directory.
+  │   ├── appdefs.xml (1)              <--  App specific template data source.
+  │   └── README.md                    <--+ Generated documentation.
+  ├── docker-app2/
+  │   ├── appdefs.xml
+  │   └── README.md
+  ├── ...
+  └── docker-appX/
+      ├── appdefs.xml
+      └── README.md
 "
 }
 
