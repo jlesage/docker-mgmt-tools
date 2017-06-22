@@ -55,9 +55,10 @@ die() {
 generate_readme() {
     APP_SOURCE_DATA="$(realpath "$1" 2> /dev/null)"
     README="$(dirname "$APP_SOURCE_DATA")/README.md"
+    README_BACKUP="$README-$(date +%Y-%m-%d-%H-%M-%S)"
 
     if [ -f "$README" ]; then
-        cp "$README" "$README-$(date +%Y-%m-%d-%H-%M-%S)"
+        cp "$README" "$README_BACKUP"
     fi
 
     echo "Generating $README..."
@@ -67,6 +68,11 @@ generate_readme() {
         "$APP_SOURCE_DATA" \
         --force-list "$FORCE_LIST" \
         > "$README"
+
+    # Remove the backup if generated file is the same.
+    if diff "$README" "$README_BACKUP" > /dev/null; then
+        rm "$README_BACKUP"
+    fi
 }
 
 generate_unraid_template() {
@@ -75,6 +81,7 @@ generate_unraid_template() {
     UNRAID_TEMPLATE_DIR="$(dirname "$APP_SOURCE_DATA")/../docker-templates/jlesage"
     UNRAID_TEMPLATE_DIR="$(realpath "$UNRAID_TEMPLATE_DIR")"
     UNRAID_TEMPLATE="$UNRAID_TEMPLATE_DIR/$APP_NAME.xml"
+    UNRAID_TEMPLATE_BACKUP="$UNRAID_TEMPLATE-$(date +%Y-%m-%d-%H-%M-%S)"
 
     if [ ! -d "$UNRAID_TEMPLATE_DIR" ]; then
         echo "Skipping generation of $APP_NAME unRAID template: Directory not found: $UNRAID_TEMPLATE_DIR."
@@ -82,7 +89,7 @@ generate_unraid_template() {
     fi
 
     if [ -f "$UNRAID_TEMPLATE" ]; then
-        cp "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE-$(date +%Y-%m-%d-%H-%M-%S)"
+        cp "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE_BACKUP"
     fi
 
     echo "Generating $UNRAID_TEMPLATE..."
@@ -92,6 +99,11 @@ generate_unraid_template() {
         "$APP_SOURCE_DATA" \
         --force-list "$FORCE_LIST" \
         > "$UNRAID_TEMPLATE"
+
+    # Remove the backup if generated file is the same.
+    if diff "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE_BACKUP" > /dev/null; then
+        rm "$UNRAID_TEMPLATE_BACKUP"
+    fi
 }
 
 generate_all() {
