@@ -24,6 +24,7 @@ docker run -d --rm \
     -p 5800:5800 \
     -p 5900:5900 \
 {% for item in app.container.volume %}
+  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.include_in_quick_start == 'true' %}
     -v {{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }} \
   {% endif %}
@@ -38,6 +39,7 @@ docker run -d --rm \
 
 Where:
 {% for item in app.container.volume %}
+  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.include_in_quick_start == 'true' %}
   - `{{ item.host_path_example }}`: {{ item.description }}
   {% endif %}
@@ -90,6 +92,7 @@ format: `<HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]`.
 | Container path  | Permissions | Description |
 |-----------------|-------------|-------------|
 {% for item in app.container.volume %}
+  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.description %}
 |`{{ item.container_path }}`| {{ item.permissions }} | {{ item.description }} |
   {% endif %}

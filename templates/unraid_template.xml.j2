@@ -78,6 +78,7 @@
   </Networking>
   <Data>
 {% for item in app.container.volume %}
+  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.unraid_template %}
     <Volume>
     {% if item.unraid_template.default %}
@@ -108,6 +109,7 @@
   </Environment>
   <!-- Volume Mappings -->
 {% for item in app.container.volume %}
+  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.unraid_template is defined %}
   <Config Name="{{ item.unraid_template.title }}" Target="{{ item.container_path }}" Default="{{ item.unraid_template.default|default('', true) }}" Mode="{{ item.permissions }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}" Type="Path" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
   {% endif %}
