@@ -70,8 +70,10 @@ generate_readme() {
         > "$README"
 
     # Remove the backup if generated file is the same.
-    if diff "$README" "$README_BACKUP" > /dev/null; then
-        rm "$README_BACKUP"
+    if [ -f "$README_BACKUP" ]; then
+        if diff "$README" "$README_BACKUP" > /dev/null; then
+            rm "$README_BACKUP"
+        fi
     fi
 }
 
@@ -101,8 +103,10 @@ generate_unraid_template() {
         > "$UNRAID_TEMPLATE"
 
     # Remove the backup if generated file is the same.
-    if diff "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE_BACKUP" > /dev/null; then
-        rm "$UNRAID_TEMPLATE_BACKUP"
+    if [ -f "$UNRAID_TEMPLATE_BACKUP" ]; then
+        if diff "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE_BACKUP" > /dev/null; then
+            rm "$UNRAID_TEMPLATE_BACKUP"
+        fi
     fi
 }
 
