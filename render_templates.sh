@@ -9,39 +9,17 @@ FORCE_LIST="environment_variable,volume,port,change,link,section,release,overvie
 usage() {
     echo "usage: $(basename $0) WORKPATH
 
-Generate the README.md and unRAID template of one or multiple Docker container
-for GUI applications.
+Generate the README.md and unRAID template of one or multiple Docker containers.
+
+The data source for templates are stored in:
+  - appdefs.xml for Docker containers running an application.
+  - baseimagedefs.xml for Docker baseimages.
 
 WORKPATH can be:
-  1) The path to the 'appdefs.xml' template data source file.
-  2) The directory in which 'appdefs.xml' template data source file can be found.
-  3) The directory in which 'docker-*/appdefs.xml' template data source file(s)
-    can be found.
-
-Expected directory structure:
-  root/ (3)
-  ├── $(basename "$SCRIPT_DIR")/
-  │   ├── templates/
-  │   │   ├── README.md.j2             <--  Jinja2 template for documentation.
-  │   │   └── unraid_templates.xml.j2  <--  Jinja2 template for unRAID template.
-  │   ├── render_templates.sh          <--  This script.
-  │   └── commonappdefs.xml            <--  Common template data source.
-  ├── docker-templates/                <--  unRAID templates directory.
-  │   └── jlesage/
-  │       ├── app1.xml                 <--+ Generated unRAID template.
-  │       ├── app2.xml
-  │       ├── ...
-  │       └── appX.xml
-  ├── docker-app1/ (2)                 <--  App's docker container directory.
-  │   ├── appdefs.xml (1)              <--  App specific template data source.
-  │   └── README.md                    <--+ Generated documentation.
-  ├── docker-app2/
-  │   ├── appdefs.xml
-  │   └── README.md
-  ├── ...
-  └── docker-appX/
-      ├── appdefs.xml
-      └── README.md
+  1) The path to the template data source file.
+  2) The directory in which a template data source file can be found.
+  3) The directory containing the 'docker-*/' folders in which  template data
+     source files can be found.
 "
 }
 
@@ -52,67 +30,99 @@ die() {
     exit 1
 }
 
-generate_readme() {
-    APP_SOURCE_DATA="$(realpath "$1" 2> /dev/null)"
-    README="$(dirname "$APP_SOURCE_DATA")/README.md"
-    README_BACKUP="$README-$(date +%Y-%m-%d-%H-%M-%S)"
+get_app_data_sources() {
+    DATA_SOURCE="$1"
+    DATA_SOURCES="'$DATA_SOURCE'"
 
-    if [ -f "$README" ]; then
-        cp "$README" "$README_BACKUP"
+    # Add data source from GUI baseimage.
+    if cat "$DATA_SOURCE" | grep -iq '<gui>true</gui>'; then
+        if [ -f "$SCRIPT_DIR/../docker-baseimage-gui/baseimagedefs.xml" ]; then
+            DATA_SOURCES="'$(realpath "$SCRIPT_DIR/../docker-baseimage-gui/baseimagedefs.xml")' $DATA_SOURCES"
+        else
+            DATA_SOURCES="'https://raw.githubusercontent.com/jlesage/docker-baseimage-gui/master/baseimagedefs.xml' $DATA_SOURCES"
+        fi
+    fi
+    # Add data source from baseimage.
+    if [ -f "$SCRIPT_DIR/../docker-baseimage/baseimagedefs.xml" ]; then
+        DATA_SOURCES="'$(realpath "$SCRIPT_DIR/../docker-baseimage/baseimagedefs.xml")' $DATA_SOURCES"
+    else
+        DATA_SOURCES="'https://raw.githubusercontent.com/jlesage/docker-baseimage/master/baseimagedefs.xml' $DATA_SOURCES"
     fi
 
-    echo "Generating $README..."
+    echo "$DATA_SOURCES"
+}
+
+get_baseimage_data_sources() {
+    DATA_SOURCE="$1"
+    DATA_SOURCES="'$DATA_SOURCE'"
+
+    if [ "$(basename "$(dirname "$DATA_SOURCE")")" = "docker-baseimage-gui" ]; then
+        if [ -f "$SCRIPT_DIR/../docker-baseimage/baseimagedefs.xml" ]; then
+            DATA_SOURCES="'$(realpath "$SCRIPT_DIR/../docker-baseimage/baseimagedefs.xml")' $DATA_SOURCES"
+        else
+            DATA_SOURCES="'https://raw.githubusercontent.com/jlesage/docker-baseimage/master/baseimagedefs.xml' $DATA_SOURCES"
+        fi
+    fi
+
+    echo "$DATA_SOURCES"
+}
+
+generate() {
+    TEMPLATE="$1"
+    OUTPUT="$2"
+    shift 2
+
+    OUTPUT_BACKUP="$OUTPUT-$(date +%Y-%m-%d-%H-%M-%S)"
+
+    if [ -f "$OUTPUT" ]; then
+        cp "$OUTPUT" "$OUTPUT_BACKUP"
+    fi
+
+    echo "Generating $OUTPUT..."
     curl -s https://raw.githubusercontent.com/jlesage/docker-render-template/master/render_template.sh | sh -s \
-        "$SCRIPT_DIR/templates/README.md.j2" \
-        "$SCRIPT_DIR/commonappdefs.xml" \
-        "$APP_SOURCE_DATA" \
+        "$TEMPLATE" \
+        "$@" \
         --force-list "$FORCE_LIST" \
-        > "$README"
+        > "$OUTPUT"
 
     # Remove the backup if generated file is the same.
-    if [ -f "$README_BACKUP" ]; then
-        if diff "$README" "$README_BACKUP" > /dev/null; then
-            rm "$README_BACKUP"
+    if [ -f "$OUTPUT_BACKUP" ]; then
+        if diff "$OUTPUT" "$OUTPUT_BACKUP" > /dev/null; then
+            rm "$OUTPUT_BACKUP"
         fi
     fi
 }
 
-generate_unraid_template() {
-    APP_SOURCE_DATA="$(realpath "$1" 2> /dev/null)"
-    APP_NAME="$(echo "$(basename "$(dirname "$APP_SOURCE_DATA")" | sed 's/docker-//')")"
-    UNRAID_TEMPLATE_DIR="$(dirname "$APP_SOURCE_DATA")/../docker-templates/jlesage"
+generate_app_readme() {
+    DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
+    DATA_SOURCES="$(get_app_data_sources "$DATA_SOURCE")"
+    README="$(dirname "$DATA_SOURCE")/README.md"
+
+    eval "generate '$SCRIPT_DIR/templates/app/README.md.j2' '$README' $DATA_SOURCES"
+}
+
+generate_app_unraid_template() {
+    DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
+    DATA_SOURCES="$(get_app_data_sources "$DATA_SOURCE")"
+    APP_NAME="$(echo "$(basename "$(dirname "$DATA_SOURCE")" | sed 's/docker-//')")"
+    UNRAID_TEMPLATE_DIR="$(dirname "$DATA_SOURCE")/../docker-templates/jlesage"
     UNRAID_TEMPLATE_DIR="$(realpath "$UNRAID_TEMPLATE_DIR")"
     UNRAID_TEMPLATE="$UNRAID_TEMPLATE_DIR/$APP_NAME.xml"
-    UNRAID_TEMPLATE_BACKUP="$UNRAID_TEMPLATE-$(date +%Y-%m-%d-%H-%M-%S)"
 
-    if [ ! -d "$UNRAID_TEMPLATE_DIR" ]; then
-        echo "Skipping generation of $APP_NAME unRAID template: Directory not found: $UNRAID_TEMPLATE_DIR."
-        return
-    fi
-
-    if [ -f "$UNRAID_TEMPLATE" ]; then
-        cp "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE_BACKUP"
-    fi
-
-    echo "Generating $UNRAID_TEMPLATE..."
-    curl -s https://raw.githubusercontent.com/jlesage/docker-render-template/master/render_template.sh | sh -s \
-        "$SCRIPT_DIR/templates/unraid_template.xml.j2" \
-        "$SCRIPT_DIR/commonappdefs.xml" \
-        "$APP_SOURCE_DATA" \
-        --force-list "$FORCE_LIST" \
-        > "$UNRAID_TEMPLATE"
-
-    # Remove the backup if generated file is the same.
-    if [ -f "$UNRAID_TEMPLATE_BACKUP" ]; then
-        if diff "$UNRAID_TEMPLATE" "$UNRAID_TEMPLATE_BACKUP" > /dev/null; then
-            rm "$UNRAID_TEMPLATE_BACKUP"
-        fi
-    fi
+    eval "generate '$SCRIPT_DIR/templates/app/unraid_template.xml.j2' '$UNRAID_TEMPLATE' $DATA_SOURCES"
 }
 
-generate_all() {
-    generate_readme "$1"
-    generate_unraid_template "$1"
+generate_baseimage_all() {
+    DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
+    DATA_SOURCES="$(get_baseimage_data_sources "$DATA_SOURCE")"
+    README="$(dirname "$DATA_SOURCE")/README.md"
+
+    eval "generate '$SCRIPT_DIR/templates/baseimage/README.md.j2' '$README' $DATA_SOURCES"
+}
+
+generate_app_all() {
+    generate_app_readme "$1"
+    generate_app_unraid_template "$1"
 }
 
 # Make sure an argument is provided.
@@ -122,28 +132,41 @@ if [ "${1:-UNSET}" = "UNSET" ]; then
 fi
 
 # Make sure required files are found.
-[ -f "$SCRIPT_DIR/commonappdefs.xml" ] || die "Common application data source: File not found: $SCRIPT_DIR/commonappdefs.xml"
-[ -f "$SCRIPT_DIR/templates/README.md.j2" ] || die "README.md template: File not found: $SCRIPT_DIR/templates/README.md.j2"
-[ -f "$SCRIPT_DIR/templates/unraid_template.xml.j2" ] || die "unRAID template: File not found: $SCRIPT_DIR/templates/unraid_template.xml.j2"
+[ -f "$SCRIPT_DIR/templates/baseimage/README.md.j2" ] || die "README.md template: File not found: $SCRIPT_DIR/templates/baseimage/README.md.j2"
+[ -f "$SCRIPT_DIR/templates/app/README.md.j2" ] || die "README.md template: File not found: $SCRIPT_DIR/templates/app/README.md.j2"
+[ -f "$SCRIPT_DIR/templates/app/unraid_template.xml.j2" ] || die "unRAID template: File not found: $SCRIPT_DIR/templates/app/unraid_template.xml.j2"
 
 # Handle the provided WORKPATH.
 WORKPATH="$1"
 if [ -f "$WORKPATH" ]; then
-    generate_all "$WORKPATH"
+    if [ "$(basename "$WORKPATH")" = "appdefs.xml" ]; then
+        generate_app_all "$WORKPATH"
+    elif [ "$(basename "$WORKPATH")" = "baseimagedefs.xml" ]; then
+        generate_baseimage_all "$WORKPATH"
+    else
+        echo "Unexpected file name: $WORKPATH"
+        exit 1
+    fi
 elif [ -d "$WORKPATH" ]; then
     if [ -f "$WORKPATH/appdefs.xml" ]; then
-        generate_all "$WORKPATH/appdefs.xml"
+        generate_app_all "$WORKPATH/appdefs.xml"
+    elif [ -f "$WORKPATH/baseimagedefs.xml" ]; then
+        generate_baseimage_all "$WORKPATH/baseimagedefs.xml"
     else
         DATA_SOURCE_FILE_FOUND="$(mktemp)"
         echo 0 > "$DATA_SOURCE_FILE_FOUND"
+        ls "$WORKPATH"/docker-*/baseimagedefs.xml 2>/dev/null | while read -r FILE; do
+            generate_baseimage_all "$FILE"
+            echo 1 > "$DATA_SOURCE_FILE_FOUND"
+        done
         ls "$WORKPATH"/docker-*/appdefs.xml 2>/dev/null | while read -r FILE; do
-            generate_all "$FILE"
+            generate_app_all "$FILE"
             echo 1 > "$DATA_SOURCE_FILE_FOUND"
         done
         FOUND="$(cat "$DATA_SOURCE_FILE_FOUND")"
         rm "$DATA_SOURCE_FILE_FOUND"
         if [ "$FOUND" -eq 0 ]; then
-            die "No appdefs.xml file found."
+            die "No appdefs.xml/baseimagedefs.xml file found."
         fi
     fi
 else

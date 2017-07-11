@@ -1,0 +1,233 @@
+# {{ defs.baseimage.title }}
+[![Docker Automated build](https://img.shields.io/docker/automated/jlesage/{{ defs.baseimage.name }}.svg)](https://hub.docker.com/r/jlesage/{{ defs.baseimage.name }}/) [![Build Status](https://travis-ci.org/jlesage/docker-{{ defs.baseimage.name }}.svg?branch=master)](https://travis-ci.org/jlesage/docker-{{ defs.baseimage.name }})
+
+{{ defs.baseimage.description }}
+
+## Images
+Different docker images are available:
+
+| Base distribution  | Tag              | Size |
+|--------------------|------------------|------|
+| [Alpine 3.5]       | alpine-3.5       | [![](https://images.microbadger.com/badges/image/jlesage/{{ defs.baseimage.name }}:alpine-3.5.svg)](http://microbadger.com/#/images/jlesage/{{ defs.baseimage.name }}:alpine-3.5 "Get your own image badge on microbadger.com") |
+| [Alpine 3.6]       | alpine-3.6       | [![](https://images.microbadger.com/badges/image/jlesage/{{ defs.baseimage.name }}:alpine-3.5.svg)](http://microbadger.com/#/images/jlesage/{{ defs.baseimage.name }}:alpine-3.6 "Get your own image badge on microbadger.com") |
+| [Alpine 3.5]       | alpine-3.5-glibc | [![](https://images.microbadger.com/badges/image/jlesage/{{ defs.baseimage.name }}:alpine-3.5-glibc.svg)](http://microbadger.com/#/images/jlesage/{{ defs.baseimage.name }}:alpine-3.5-glibc "Get your own image badge on microbadger.com") |
+| [Alpine 3.6]       | alpine-3.6-glibc | [![](https://images.microbadger.com/badges/image/jlesage/{{ defs.baseimage.name }}:alpine-3.5-glibc.svg)](http://microbadger.com/#/images/jlesage/{{ defs.baseimage.name }}:alpine-3.6-glibc "Get your own image badge on microbadger.com") |
+| [Debian 8]         | debian-8         | [![](https://images.microbadger.com/badges/image/jlesage/{{ defs.baseimage.name }}:debian-8.svg)](http://microbadger.com/#/images/jlesage/{{ defs.baseimage.name }}:debian-8/ "Get your own image badge on microbadger.com") |
+| [Ubuntu 16.04 LTS] | ubuntu-16.04     | [![](https://images.microbadger.com/badges/image/jlesage/{{ defs.baseimage.name }}:ubuntu-16.04.svg)](http://microbadger.com/#/images/jlesage/{{ defs.baseimage.name }}:ubuntu-16.04 "Get your own image badge on microbadger.com") |
+
+[Alpine 3.5]: https://alpinelinux.org
+[Alpine 3.6]: https://alpinelinux.org
+[Debian 8]: https://www.debian.org/releases/jessie/
+[Ubuntu 16.04 LTS]: http://releases.ubuntu.com/16.04/
+
+Due to its size, the `Alpine` image is recommended.  However, it may be harder
+to integrate your application (especially third party ones without source code),
+because:
+ 1. Packages repository may not be as complete as `Ubuntu`/`Debian`.
+ 2. Third party applications may not support `Alpine`.
+ 3. The `Alpine` distribution uses the [musl] C standard library instead of
+ GNU C library ([glibc]).
+  * NOTE: Using the `Alpine` image with glibc integrated (`alpine-3.5-glibc`
+    tag) may ease integration of applications.
+
+The next choice is to use the `Debian` image.  It provides a great compatibility
+and its size is smaller than the `Ubuntu` one.  Finally, if for any reason you
+prefer an `Ubuntu` image, one based on the stable `16.04 LTS` version is
+provided.
+
+[musl]: https://www.musl-libc.org/
+[glibc]: https://www.gnu.org/software/libc/
+
+### Content
+Here are the main components of the baseimage:
+  * [S6-overlay], a process supervisor for containers.
+{% if defs.baseimage.gui|upper == 'TRUE' %}
+  * [x11vnc], a X11 VNC server.
+  * [xvfb], a X virtual framebuffer display server.
+  * [openbox], a windows manager.
+  * [noVNC], a HTML5 VNC client.
+{% endif %}
+
+[S6-overlay]: https://github.com/just-containers/s6-overlay
+{% if defs.baseimage.gui|upper == 'TRUE' %}
+[x11vnc]: http://www.karlrunge.com/x11vnc/
+[xvfb]: http://www.x.org/releases/X11R7.6/doc/man/man1/Xvfb.1.xhtml
+[openbox]: http://openbox.org
+[noVNC]: https://github.com/novnc/noVNC
+{% endif %}
+
+## Getting started
+The `Dockerfile` for your application can be very simple, as only three things
+are required:
+
+  * Instructions to install the application.
+  * A script that starts the application (stored at `/startapp.sh` in
+    container).
+  * The name of the application.
+
+{% if defs.baseimage.gui|upper == 'TRUE' %}
+Here is an example of a docker file that would be used to run the `xterm`
+terminal.
+{% else %}
+Here is an example of a docker file that would be used to run a simple web
+NodeJS server.
+{% endif %}
+
+In ``Dockerfile``:
+```
+# Pull base image.
+FROM jlesage/{{ defs.baseimage.name }}:alpine-3.6
+
+{% if defs.baseimage.gui|upper == 'TRUE' %}
+# Install xterm.
+RUN apk --no-cache add xterm && \
+    rm -rf /tmp/*
+{% else %}
+# Install http-server.
+RUN apk --no-cache add nodejs-npm && \
+    npm install http-server -g
+{% endif %}
+
+# Copy the start script.
+COPY startapp.sh /startapp.sh
+
+# Set the name of the application.
+ENV APP_NAME="{{ 'Xterm' if defs.baseimage.gui|upper == 'TRUE' else 'http-server' }}"
+
+{% if defs.baseimage.gui|upper == 'FALSE' %}
+# Expose ports.
+EXPORT 8080
+{% endif %}
+```
+
+In `startapp.sh`:
+```
+#!/bin/sh
+exec {{ '/usr/bin/xterm' if defs.baseimage.gui|upper == 'TRUE' else '/usr/bin/http-server' }}
+```
+
+Then, build your docker image:
+
+    docker build -t {{ 'docker-xterm' if defs.baseimage.gui|upper == 'TRUE' else 'docker-http-server' }} .
+
+And run it:
+
+    docker run --rm {{ '-p 5800:5800 -p 5900:5900 docker-xterm' if defs.baseimage.gui|upper == 'TRUE' else '-p 8080:8080 docker-http-server' }}
+
+{% if defs.baseimage.gui|upper == 'TRUE' %}
+You should be able to access the xterm GUI by opening in a web browser:
+
+`http://[HOST IP ADDR]:5800`
+{% else %}
+You should be able to access the HTTP server by opening in a web browser:
+
+`http://[HOST IP ADDR]:8080`
+{% endif %}
+
+## Environment Variables
+
+Some environment variables can be set to customize the behavior of the container
+and its application.  The following list give more details about them.
+
+Environment variables can be set directly in your `Dockerfile` via the `ENV`
+instruction or dynamically by adding one or more arguments `-e "<VAR>=<VALUE>"`
+to the `docker run` command.
+
+| Variable       | Description                                  | Default |
+|----------------|----------------------------------------------|---------|
+{% for item in defs.container.environment_variables.environment_variable if item.limited_to|default('none') != 'app' %}
+|`{{ item.name }}`| {{ item.description }} | {% if item.default %}`{{ item.default }}`{% else %}(unset){% endif %} |
+{% endfor %}
+
+## Config Directory
+Inside the container, the application's configuration should be stored in the
+`/config` directory.
+
+{% if defs.baseimage.gui|upper == 'TRUE' %}
+This directory is also used to store the VNC password.  See the
+[VNC Pasword](#vnc-password) section for more details.
+{% endif %}
+
+**NOTE**: During the container startup, the user which runs the application
+(i.e. user defined by `USER_ID`) will claim ownership of the entire content of
+this directory.
+
+{% if defs.container.ports.port|length > 0 %}
+## Ports
+
+Here is the list of ports used by container.  They can be mapped to the host
+via the `-p <HOST_PORT>:<CONTAINER_PORT>` parameter.  The port number inside the
+container cannot be changed, but you are free to use any port on the host side.
+
+| Port | Mapping to host | Description |
+|------|-----------------|-------------|
+{% for item in defs.container.ports.port if item.limited_to|default('none') != 'app' %}
+| {{ item.number }} | {{ 'Mandatory' if item.mandatory == 'true' else 'Optional' }} | {{ item.description }} |
+{% endfor %}
+{% endif %}
+
+## User/Group IDs
+
+When using data volumes (`-v` flags), permissions issues can occur between the
+host and the container.  For example, the user within the container may not
+exists on the host.  This could prevent the host from properly accessing files
+and folders on the shared volume.
+
+To avoid any problem, you can specify the user the application should run as.
+
+This is done by passing the user ID and group ID to the container via the
+`USER_ID` and `GROUP_ID` environment variables.
+
+To find the right IDs to use, issue the following command on the host, with the
+user owning the data volume on the host:
+
+    id <username>
+
+Which gives an output like this one:
+```
+uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),46(plugdev),113(lpadmin)
+```
+
+The value of `uid` (user ID) and `gid` (group ID) are the ones that you should
+be given the container.
+
+## Locales
+The default locale of the container is set to `POSIX`.  If this cause issues
+with your application, the proper locale can be set via your `Dockerfile`, by adding these two lines:
+```
+ENV LANG=en_US.UTF-8
+RUN locale-gen en_CA.UTF-8
+```
+
+**NOTE**: Locales are not supported by `musl` C standard library on `Alpine`.
+See:
+  * http://wiki.musl-libc.org/wiki/Open_Issues#C_locale_conformance
+  * https://github.com/gliderlabs/docker-alpine/issues/144
+{% if defs.baseimage.documentation %}
+{% for item in defs.baseimage.documentation.section %}
+
+{% for i in range(item.title['@level']|int) %}#{% endfor %} {{ item.title['#text'] }}
+  {% if item.content %}
+
+{{ item.content }}
+  {% endif %}
+{% endfor %}
+
+{% for item in defs.baseimage.documentation.link %}
+[{{ item.name }}]: {{ item.url }}
+{% endfor %}
+{% endif %}
+
+## Security
+TBD
+
+## Notes
+* Make sure to read the [S6 overlay documentation].  It contains information
+that can help building your image.  For example, the S6 overlay allows you to
+easily add initialization scripts and services.
+
+[S6 overlay documentation]: https://github.com/just-containers/s6-overlay/blob/master/README.md
+
+{% for item in defs.documentation.link %}
+[{{ item.name }}]: {{ item.url }}
+{% endfor %}

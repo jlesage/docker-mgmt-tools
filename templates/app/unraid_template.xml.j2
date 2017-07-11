@@ -1,55 +1,55 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>{{ app.friendly_name|replace(' ', '') }}</Name>
-  <Repository>jlesage/{{ app.name }}</Repository>
-  <Registry>https://hub.docker.com/r/jlesage/{{ app.name }}/</Registry>
+  <Name>{{ defs.app.friendly_name|replace(' ', '') }}</Name>
+  <Repository>jlesage/{{ defs.app.name }}</Repository>
+  <Registry>https://hub.docker.com/r/jlesage/{{ defs.app.name }}/</Registry>
   <Network>bridge</Network>
   <Privileged>false</Privileged>
-  <Support>{{ app.unraid.support_url }}</Support>
+  <Support>{{ defs.app.unraid.support_url }}</Support>
   <Overview>
-    {{ app.project.description|replace('[', '')|replace(']', '') }}
+    {{ defs.app.project.description|replace('[', '')|replace(']', '') }}
     [br][br]
-{% for item in app.container.overview %}
+{% for item in defs.app.container.overview %}
     {{ item }}
 {% endfor %}
     Also, being based on Alpine Linux, size of this container
-    is very small (less than {{ app.container.rough_download_size }} in download size).
+    is very small (less than {{ defs.app.container.rough_download_size }} in download size).
     [br][br][span][/span]
     For a complete documentation of this container, see
-    [a href="https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md"]
-    https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md[/a].
-    {% if app.unraid.extra_description %}
+    [a href="https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md"]
+    https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md[/a].
+    {% if defs.app.unraid.extra_description %}
     [br][br]
-    {{ app.unraid.extra_description }}
+    {{ defs.app.unraid.extra_description }}
     {% endif %}
   </Overview>
-  <Category>{{ app.unraid.category }}</Category>
+  <Category>{{ defs.app.unraid.category }}</Category>
   <WebUI>http://[IP]:[PORT:5800]</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/{{ app.name }}.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ app.name }}-icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/{{ defs.app.name }}.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ defs.app.name }}-icon.png</Icon>
   <ExtraParams/>
   <Description>
-    {{ app.project.description|replace('[', '')|replace(']', '') }}
+    {{ defs.app.project.description|replace('[', '')|replace(']', '') }}
     [br][br]
-{% for item in app.container.overview %}
+{% for item in defs.app.container.overview %}
     {{ item }}
 {% endfor %}
     Also, being based on Alpine Linux, size of this container
-    is very small (less than {{ app.container.rough_download_size }} in download size).
+    is very small (less than {{ defs.app.container.rough_download_size }} in download size).
     [br][br][span][/span]
     For a complete documentation of this container, see
-    [a href="https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md"]
-    https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md[/a].
-    {% if app.unraid.extra_description %}
+    [a href="https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md"]
+    https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md[/a].
+    {% if defs.app.unraid.extra_description %}
     [br][br]
-    {{ app.unraid.extra_description }}
+    {{ defs.app.unraid.extra_description }}
     {% endif %}
   </Description>
   <Beta>False</Beta>
-  <Project>{{ app.project.url }}</Project>
-  <Date>{{ app.history.release[0].date }}</Date>
-  <Changes>[font size=4][center]{{ app.friendly_name }} Change Log[/center][/font]
-{% for item in app.history.release %}
+  <Project>{{ defs.app.project.url }}</Project>
+  <Date>{{ defs.app.history.release[0].date }}</Date>
+  <Changes>[font size=4][center]{{ defs.app.friendly_name }} Change Log[/center][/font]
+{% for item in defs.app.history.release %}
 [font size=3][b]v{{ item.version }}[/b][/font] ({{ item.date }})
   {% for chg in item.change %}
     {% if chg is mapping %}
@@ -65,7 +65,7 @@
   <Networking>
     <Mode>bridge</Mode>
     <Publish>
-{% for item in app.container.port %}
+{% for item in defs.container.ports.port %}
   {% if item.unraid_template %}
       <Port>
         <HostPort>{{ item.unraid_template.default|default(item.number, true) }}</HostPort>
@@ -77,8 +77,8 @@
     </Publish>
   </Networking>
   <Data>
-{% for item in app.container.volume %}
-  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
+{% for item in defs.container.volumes.volume %}
+  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.unraid_template %}
     <Volume>
     {% if item.unraid_template.default %}
@@ -93,7 +93,7 @@
 {% endfor %}
   </Data>
   <Environment>
-{% for item in app.container.environment_variable %}
+{% for item in defs.container.environment_variables.environment_variable %}
   {% if item.unraid_template %}
     <Variable>
     {% if item.unraid_template.default|default(item.default, true) %}
@@ -108,20 +108,20 @@
 {% endfor %}
   </Environment>
   <!-- Volume Mappings -->
-{% for item in app.container.volume %}
-  {% if item.container_path in app.container.unsupported_volume %}{% continue %}{% endif %}
+{% for item in defs.container.volumes.volume %}
+  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
   {% if item.unraid_template is defined %}
   <Config Name="{{ item.unraid_template.title }}" Target="{{ item.container_path }}" Default="{{ item.unraid_template.default|default('', true) }}" Mode="{{ item.permissions }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}" Type="Path" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
   {% endif %}
 {% endfor %}
   <!-- Variable Mappings -->
-{% for item in app.container.environment_variable %}
+{% for item in defs.container.environment_variables.environment_variable %}
   {% if item.unraid_template is defined %}
   <Config Name="{{ item.unraid_template.title }}" Target="{{ item.name }}" Default="{{ item.unraid_template.default|default(item.default, true)|default('', true) }}" Mode="" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}" Type="Variable" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
   {% endif %}
 {% endfor %}
   <!-- Port Mappings -->
-{% for item in app.container.port %}
+{% for item in defs.container.ports.port %}
   {% if item.unraid_template is defined %}
   <Config Name="{{ item.unraid_template.title }}" Target="{{ item.number }}" Default="{{ item.unraid_template.default|default(item.number, true) }}" Mode="{{ item.protocol }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}" Type="Port" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
   {% endif %}
