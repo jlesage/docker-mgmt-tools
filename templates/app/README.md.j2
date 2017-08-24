@@ -6,6 +6,10 @@ This is a Docker container for {{ defs.app.friendly_name }}.
 
 {{ item }}
 {% endfor %}
+{% if defs.app.documentation.important %}
+
+{{ defs.app.documentation.important }}
+{% endif %}
 
 ---
 
