@@ -126,4 +126,6 @@
   <Config Name="{{ item.unraid_template.title }}" Target="{{ item.number }}" Default="{{ item.unraid_template.default|default(item.number, true) }}" Mode="{{ item.protocol }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}" Type="Port" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
   {% endif %}
 {% endfor %}
+  <DonateLink>https://paypal.me/JocelynLeSage</DonateLink>
+  <DonateImg>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/donate.png</DonateImg>
 </Container>
