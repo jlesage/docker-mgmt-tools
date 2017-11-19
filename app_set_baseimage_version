@@ -1,0 +1,68 @@
+#!/bin/sh
+
+usage() {
+    echo "usage: $(basename "$0") APPXML VERSION
+
+Arguments:
+    APPXML                     Path to the application's definitions XML file.
+    VERSION                    Version of the baseimage (e.g. 2.0.0).
+"
+}
+
+die() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    exit 1
+}
+
+die_usage() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    echo
+    usage
+    exit 1
+}
+
+promptyn() {
+    echo -n "$1 (y/n)?"
+    old_stty_cfg=$(stty -g)
+    stty raw -echo ; answer=$(head -c 1) ; stty $old_stty_cfg
+    echo
+    echo "$answer" | grep -iq "^y"
+}
+
+APPXML="$1"
+VERSION="$2"
+
+# Validate arguments.
+[ -n "$APPXML" ] || die_usage "Application's definitions XML file is missing."
+[ -f "$APPXML" ] || die_usage "File not found: '$APPXML'"
+[ -n "$VERSION" ] || die_usage "Version is missing."
+
+APPDIR="$(readlink -f "$(dirname "$APPXML")")"
+
+[ -f "$APPDIR"/Dockerfile ] || die_usage "File not found: '"$APPDIR"/Dockerfile'."
+
+if grep -q "^FROM jlesage/baseimage.*-v$VERSION\$" "$APPDIR"/Dockerfile; then
+    echo "Baseimage version already set to $VERSION."
+    exit 0
+fi
+
+# Modify baseimage version in Dockerfile.
+sed -i.bak "s|\(^FROM jlesage/baseimage.*-v\)\([0-9]\.[0-9]\.[0-9]\)$|\1$VERSION|" "$APPDIR"/Dockerfile
+diff "$APPDIR"/Dockerfile "$APPDIR"/Dockerfile.bak > /dev/null
+if [ "$?" -ne 1 ]; then
+    die "Failed to set baseimage to version '$VERSION'."
+fi
+rm "$APPDIR"/Dockerfile.bak
+
+# Commit changes.
+if [ -d "$APPDIR"/.git ]; then
+    echo "The following changes will be pushed to the git repository:"
+    git -C "$APPDIR" --no-pager diff Dockerfile
+    if promptyn 'Proceed'; then
+        git -C "$APPDIR" add Dockerfile
+        git -C "$APPDIR" commit -m "Upgraded baseimage to version $VERSION."
+        git -C "$APPDIR" push origin master
+    else
+        exit 1
+    fi
+fi
