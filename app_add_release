@@ -1,0 +1,154 @@
+#!/bin/sh
+
+usage() {
+    echo "usage: $(basename "$0") APPXML VERSION_INCREASE CHANGE [CHANGE...]
+
+Arguments:
+    APPXML                     Path to the application's definitions XML file.
+    VERSION_INCREASE           Version part to increase.  Possible values are:
+                               major, minor, patch.
+    CHANGE                     Change to be added in the changelog.  Prepend
+                               with 'XX:' to set the level.
+"
+}
+
+die() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    exit 1
+}
+
+die_usage() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    echo
+    usage
+    exit 1
+}
+
+promptyn() {
+    echo -n "$1 (y/n)?"
+    old_stty_cfg=$(stty -g)
+    stty raw -echo ; answer=$(head -c 1) ; stty $old_stty_cfg
+    echo
+    echo "$answer" | grep -iq "^y"
+}
+
+APPXML="$1"
+VINCR="$2"
+
+# Validate arguments.
+[ -n "$APPXML" ] || die_usage "Application's definitions XML file is missing."
+[ -f "$APPXML" ] || die_usage "File not found: '$APPXML'"
+[ -n "$VINCR" ] || die_usage "Version part to increase is missing."
+if [ "$VINCR" != "major" ] && [ "$VINCR" != "minor" ] && [ "$VINCR" != "patch" ]; then
+    die "Invalid version part: '$VINCR'"
+fi
+[ -n "$3" ] || die_usage "At least one change is needed."
+
+shift 2
+
+APPDIR="$(readlink -f "$(dirname "$APPXML")")"
+APPFILE="$(basename "$APPXML")"
+
+# Make sure the definitions file is not already modified.
+if [ -d "$APPDIR"/.git ] && [ -n "$(git -C "$APPDIR" diff "$APPFILE")" ]; then
+    die "$APPFILE already contains modifications."
+fi
+
+# Get current version.
+CUR_VERSION="$(cat "$APPDIR"/"$APPFILE" | sed -n 's|.*<version>\([0-9.]\+\)</version>|\1|p' | head -n 1)"
+
+# Increase the version.
+VERSION="$CUR_VERSION"
+VERSION_MAJOR="$(echo "$VERSION" | cut -d'.' -f1)"
+VERSION_MINOR="$(echo "$VERSION" | cut -d'.' -f2)"
+VERSION_PATCH="$(echo "$VERSION" | cut -d'.' -f3)"
+case "$VINCR" in
+    major)
+        VERSION_MAJOR="$(expr $VERSION_MAJOR + 1)"
+        VERSION_MINOR=0
+        VERSION_PATCH=0
+        ;;
+    minor)
+        VERSION_MINOR="$(expr $VERSION_MINOR + 1)"
+        VERSION_PATCH=0
+        ;;
+    patch)
+        VERSION_PATCH="$(expr $VERSION_PATCH + 1)"
+        ;;
+esac
+VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+[ "$CUR_VERSION" != "$VERSION" ] || die "Failed to increase version."
+
+echo "Current version: $CUR_VERSION"
+echo "New version:     $VERSION"
+
+# Generate the changelog.
+CHANGELOG="$(mktemp)"
+CHANGELOG_GITHUB="Changes in this release:\r\n"
+echo "      <release>" >> "$CHANGELOG"
+echo "        <version>$VERSION</version>" >> "$CHANGELOG"
+echo "        <date>$(date +%Y-%m-%d)</date>" >> "$CHANGELOG"
+while [ "$#" -gt 0 ]; do
+    if echo "$1" | grep -q "^[0-9]\+:"; then
+        LEVEL="$(echo "$1" | cut -d':' -f1)"
+        CHANGE="$(echo "$1" | cut -d':' -f2-)"
+        echo "        <change level=\"$LEVEL\">$CHANGE</change>" >> "$CHANGELOG"
+        CHANGELOG_GITHUB="$CHANGELOG_GITHUB$(printf '%0.s ' $(seq 1 $(expr 2 \* $LEVEL)))- $CHANGE\r\n"
+    else
+        echo "        <change>$1</change>" >> "$CHANGELOG"
+        CHANGELOG_GITHUB="$CHANGELOG_GITHUB  - $1\r\n"
+    fi
+    shift
+done
+echo "      </release>" >> "$CHANGELOG"
+#echo "Changelog:"
+#echo "#############################################"
+#cat $CHANGELOG
+#echo "#############################################"
+
+# Add the release/changelog to appdefs.xml.
+cp "$APPDIR"/"$APPFILE" "$APPFILE".bak
+sed "/<history>/ r $CHANGELOG" "$APPFILE".bak > "$APPDIR"/"$APPFILE"
+diff "$APPDIR"/"$APPFILE" "$APPFILE".bak > /dev/null 2>&1
+if [ "$?" -ne 1 ]; then
+    die "Failed to add the release to $APPFILE."
+fi
+rm "$APPFILE".bak
+rm "$CHANGELOG"
+
+# Commit the change.
+if [ -d "$APPDIR"/.git ]; then
+    echo "The following changes will be pushed to the git repository:"
+    git -C "$APPDIR" --no-pager diff "$APPFILE"
+    if promptyn 'Proceed'; then
+        git -C "$APPDIR" add "$APPFILE" && \
+        git -C "$APPDIR" commit -m "Added changelog for version $VERSION." && \
+        git -C "$APPDIR" push origin master
+        [ "$?" -eq 0 ] || die "Failed to commit changes."
+    else
+        exit 1
+    fi
+fi
+
+# Add release to github.
+if [ -d "$APPDIR"/.git ]; then
+    if promptyn 'Is this a draft release'; then
+        DRAFT="true"
+    else
+        DRAFT="false"
+    fi
+
+    JSON_DATA=$(printf '{"tag_name": "v%s","target_commitish": "master","name": "Version %s","body": "%s","draft": %s,"prerelease": false}' \
+                 "$VERSION" \
+                 "$VERSION" \
+                 "$CHANGELOG_GITHUB" \
+                 "$DRAFT"
+                 )
+    echo "Adding release to GitHub..."
+    curl -# -f \
+        --data "$JSON_DATA" \
+        https://api.github.com/repos/jlesage/$(basename "$APPDIR")/releases?access_token=$(cat ~/.github_token) > /dev/null
+    [ "$?" -eq 0 ] || die "Failed to add release to GitHub."
+fi
+
+#TODO: Render templates
