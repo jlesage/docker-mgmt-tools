@@ -7,9 +7,16 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 FORCE_LIST="environment_variable,volume,port,change,link,section,release,overview,device,unsupported_volume"
 
 usage() {
-    echo "usage: $(basename $0) WORKPATH
+    echo "usage: $(basename $0) WORKPATH [-r|-u]
 
 Generate the README.md and unRAID template of one or multiple Docker containers.
+
+Arguments:
+  WORKPATH         Working path.  See notes below.
+
+Options:
+  -r               Only generate the README.md.
+  -u               Only generate unRAID template.
 
 The data source for templates are stored in:
   - appdefs.xml for Docker containers running an application.
@@ -112,7 +119,19 @@ generate_app_unraid_template() {
     eval "generate '$SCRIPT_DIR/templates/app/unraid_template.xml.j2' '$UNRAID_TEMPLATE' $DATA_SOURCES"
 }
 
-generate_baseimage_all() {
+generate_app_all() {
+    OPT="${2:-UNSET}"
+    case "$OPT" in
+        -r) generate_app_readme "$1" ;;
+        -u) generate_app_unraid_template "$1" ;;
+        *)
+            generate_app_readme "$1"
+            generate_app_unraid_template "$1"
+            ;;
+    esac
+}
+
+generate_baseimage_readme() {
     DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
     DATA_SOURCES="$(get_baseimage_data_sources "$DATA_SOURCE")"
     README="$(dirname "$DATA_SOURCE")/README.md"
@@ -120,9 +139,16 @@ generate_baseimage_all() {
     eval "generate '$SCRIPT_DIR/templates/baseimage/README.md.j2' '$README' $DATA_SOURCES"
 }
 
-generate_app_all() {
-    generate_app_readme "$1"
-    generate_app_unraid_template "$1"
+generate_baseimage_all() {
+    OPT="${2:-UNSET}"
+    case "$OPT" in
+        -r) generate_baseimage_readme "$1" ;;
+        -u) ;;
+        *)
+            generate_baseimage_readme "$1"
+            generate_baseimage_changelog "$1"
+            ;;
+    esac
 }
 
 # Make sure an argument is provided.
@@ -138,29 +164,30 @@ fi
 
 # Handle the provided WORKPATH.
 WORKPATH="$1"
+shift
 if [ -f "$WORKPATH" ]; then
     if [ "$(basename "$WORKPATH")" = "appdefs.xml" ]; then
-        generate_app_all "$WORKPATH"
+        generate_app_all "$WORKPATH" "$@"
     elif [ "$(basename "$WORKPATH")" = "baseimagedefs.xml" ]; then
-        generate_baseimage_all "$WORKPATH"
+        generate_baseimage_all "$WORKPATH" "$@"
     else
         echo "Unexpected file name: $WORKPATH"
         exit 1
     fi
 elif [ -d "$WORKPATH" ]; then
     if [ -f "$WORKPATH/appdefs.xml" ]; then
-        generate_app_all "$WORKPATH/appdefs.xml"
+        generate_app_all "$WORKPATH/appdefs.xml" "$@"
     elif [ -f "$WORKPATH/baseimagedefs.xml" ]; then
-        generate_baseimage_all "$WORKPATH/baseimagedefs.xml"
+        generate_baseimage_all "$WORKPATH/baseimagedefs.xml" "$@"
     else
         DATA_SOURCE_FILE_FOUND="$(mktemp)"
         echo 0 > "$DATA_SOURCE_FILE_FOUND"
         ls "$WORKPATH"/docker-*/baseimagedefs.xml 2>/dev/null | while read -r FILE; do
-            generate_baseimage_all "$FILE"
+            generate_baseimage_all "$FILE" "$@"
             echo 1 > "$DATA_SOURCE_FILE_FOUND"
         done
         ls "$WORKPATH"/docker-*/appdefs.xml 2>/dev/null | while read -r FILE; do
-            generate_app_all "$FILE"
+            generate_app_all "$FILE" "$@"
             echo 1 > "$DATA_SOURCE_FILE_FOUND"
         done
         FOUND="$(cat "$DATA_SOURCE_FILE_FOUND")"
