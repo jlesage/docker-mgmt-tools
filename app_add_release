@@ -1,5 +1,7 @@
 #!/bin/sh
 
+SCRIPTDIR="$(readlink -f "$(dirname "$0")")"
+
 usage() {
     echo "usage: $(basename "$0") APPXML VERSION_INCREASE CHANGE [CHANGE...]
 
@@ -150,5 +152,8 @@ if [ -d "$APPDIR"/.git ]; then
         https://api.github.com/repos/jlesage/$(basename "$APPDIR")/releases?access_token=$(cat ~/.github_token) > /dev/null
     [ "$?" -eq 0 ] || die "Failed to add release to GitHub."
 fi
+
+# Update the unRAID template.
+"$SCRIPTDIR"/render_templates.sh "$APPDIR" -u
 
 #TODO: Render templates
