@@ -114,6 +114,41 @@ container cannot be changed, but you are free to use any port on the host side.
 | {{ item.number }} | {{ 'Mandatory' if item.mandatory == 'true' else 'Optional' }} | {{ item.description }} |
 {% endfor %}
 
+## Docker Compose File
+Here is an example of a `docker-compose.yml` file that can be used with
+[Docker Compose](https://docs.docker.com/compose/overview/):
+```yaml
+version: '3'
+services:
+  {{ defs.app.name }}:
+    build: .
+    ports:
+{% for item in defs.container.ports.port if item.limit_doc_to|default('none') != 'baseimage' %}
+      - "{{ item.number }}:{{ item.number }}"
+{% endfor %}
+{% set param_name_printed = [False] %}
+{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
+  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
+  {% if item.include_in_quick_start == 'true' %}
+    {% if not param_name_printed[0] %}
+      {% set _ = param_name_printed.append(not param_name_printed.pop()) %}
+    volumes:
+    {% endif %}
+      - "{{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }}"
+  {% endif %}
+{% endfor %}
+{% set param_name_printed = [False] %}
+{% for item in defs.container.devices.device if item.limit_doc_to|default('none') != 'baseimage' %}
+  {% if item.include_in_quick_start == 'true' %}
+    {% if not param_name_printed[0] %}
+      {% set _ = param_name_printed.append(not param_name_printed.pop()) %}
+    devices:
+    {% endif %}
+      - "{{ item.path }}:{{ item.path }}"
+  {% endif %}
+{% endfor %}
+```
+
 ## Docker Image Update
 
 If the system on which the container runs doesn't provide a way to easily update
