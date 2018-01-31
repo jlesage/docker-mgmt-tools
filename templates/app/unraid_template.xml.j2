@@ -24,7 +24,7 @@
     {% endif %}
   </Overview>
   <Category>{{ defs.app.unraid.category }}</Category>
-  <WebUI>http://[IP]:[PORT:5800]</WebUI>
+  <WebUI>http://[IP]:[PORT:{% if defs.app.unraid.web_ui_port %}{{ defs.app.unraid.web_ui_port }}{% else %}5800{% endif %}]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/{{ defs.app.name }}.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ defs.app.name }}-icon.png</Icon>
   <ExtraParams/>
