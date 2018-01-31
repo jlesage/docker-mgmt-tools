@@ -202,6 +202,7 @@ uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),
 The value of `uid` (user ID) and `gid` (group ID) are the ones that you should
 be given the container.
 
+{% if defs.app.gui.lower() == 'true' %}
 ## Accessing the GUI
 
 Assuming that container's ports are mapped to the same host's ports, the
@@ -381,6 +382,7 @@ server {
 
 ```
 
+{% endif %}
 ## Support or Contact
 
 Having troubles with the container or have questions?  Please
