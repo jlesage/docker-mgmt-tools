@@ -56,12 +56,11 @@ rm "$APPDIR"/Dockerfile.bak
 
 # Commit changes.
 if [ -d "$APPDIR"/.git ]; then
-    echo "The following changes will be pushed to the git repository:"
+    echo "The following changes will be applied:"
     git -C "$APPDIR" --no-pager diff Dockerfile
     if promptyn 'Proceed'; then
         git -C "$APPDIR" add Dockerfile
         git -C "$APPDIR" commit -m "Upgraded baseimage to version $VERSION."
-        git -C "$APPDIR" push origin master
     else
         exit 1
     fi
