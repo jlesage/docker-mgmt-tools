@@ -146,7 +146,6 @@ generate_baseimage_all() {
         -u) ;;
         *)
             generate_baseimage_readme "$1"
-            generate_baseimage_changelog "$1"
             ;;
     esac
 }
