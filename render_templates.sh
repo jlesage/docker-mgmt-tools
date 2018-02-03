@@ -106,6 +106,13 @@ generate_app_readme() {
     README="$(dirname "$DATA_SOURCE")/README.md"
 
     eval "generate '$SCRIPT_DIR/templates/app/README.md.j2' '$README' $DATA_SOURCES"
+
+    # Add the TOC.
+    TOC="$(mktemp)"
+    "$SCRIPT_DIR"/gh-md-toc "$README" > "$TOC"
+    sed -i "/^TABLE_OF_CONTENT$/r $TOC" "$README"
+    sed -i "/^TABLE_OF_CONTENT$/,+1d" "$README"
+    rm "$TOC"
 }
 
 generate_app_unraid_template() {
@@ -137,6 +144,13 @@ generate_baseimage_readme() {
     README="$(dirname "$DATA_SOURCE")/README.md"
 
     eval "generate '$SCRIPT_DIR/templates/baseimage/README.md.j2' '$README' $DATA_SOURCES"
+
+    # Add the TOC.
+    TOC="$(mktemp)"
+    "$SCRIPT_DIR"/gh-md-toc "$README" > "$TOC"
+    sed -i "/^TABLE_OF_CONTENT$/r $TOC" "$README"
+    sed -i "/^TABLE_OF_CONTENT$/,+1d" "$README"
+    rm "$TOC"
 }
 
 generate_baseimage_all() {
