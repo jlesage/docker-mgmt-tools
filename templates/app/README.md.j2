@@ -122,6 +122,31 @@ container cannot be changed, but you are free to use any port on the host side.
 | {{ item.number }} | {{ 'Mandatory' if item.mandatory == 'true' else 'Optional' }} | {{ item.description }} |
 {% endfor %}
 
+### Changing Parameters of a Running Container
+
+As seen, environment variables, volume mappings and port mappings are specified
+while creating the container.
+
+The following steps describe the method used to add, remove or update
+parameter(s) of an existing container.  The generic idea is to destroy and
+re-create the container:
+
+  1. Stop the container (if it is running):
+```
+docker stop {{ defs.app.name }}
+```
+  2. Remove the container:
+```
+docker rm {{ defs.app.name }}
+```
+  3. Create/start the container using the `docker run` command, by adjusting
+     parameters as needed.
+
+**NOTE**: Since all application's data is saved under the `/config` container
+folder, destroying and re-creating a container is not a problem: nothing is lost
+and the application comes back with the same state (as long as the mapping of
+the `/config` folder remains the same).
+
 ## Docker Compose File
 
 Here is an example of a `docker-compose.yml` file that can be used with
