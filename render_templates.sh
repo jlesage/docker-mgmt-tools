@@ -4,7 +4,7 @@ set -e # Exit immediately if a command exits with a non-zero status.
 set -u # Treat unset variables as an error.
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-FORCE_LIST="environment_variable,volume,port,change,link,section,release,overview,device,unsupported_volume"
+FORCE_LIST="environment_variable,volume,port,change,link,section,release,overview,device,unsupported_volume,extra_param"
 
 usage() {
     echo "usage: $(basename $0) WORKPATH [-r|-u]

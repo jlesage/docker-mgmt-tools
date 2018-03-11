@@ -46,6 +46,11 @@ docker run -d \
     --device {{ item.path }} \
   {% endif %}
 {% endfor %}
+{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
+  {% if item.include_in_quick_start == 'true' %}
+    --{{ item.name }} {{ item.value }} \
+  {% endif %}
+{% endfor %}
     jlesage/{{ defs.app.name }}
 ```
 
@@ -73,6 +78,9 @@ docker run [-d] \
     [-e <VARIABLE_NAME>=<VALUE>]... \
     [-v <HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]]... \
     [-p <HOST_PORT>:<CONTAINER_PORT>]... \
+{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
+    --{{ item.name }} VALUE \
+{% endfor %}
     jlesage/{{ defs.app.name }}
 ```
 | Parameter | Description |
@@ -81,6 +89,9 @@ docker run [-d] \
 | -e        | Pass an environment variable to the container.  See the [Environment Variables](#environment-variables) section for more details. |
 | -v        | Set a volume mapping (allows to share a folder/file between the host and the container).  See the [Data Volumes](#data-volumes) section for more details. |
 | -p        | Set a network port mapping (exposes an internal container port to the host).  See the [Ports](#ports) section for more details. |
+{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
+| --{{ item.name }} | {{ item.description }} |
+{% endfor %}
 
 ### Environment Variables
 
@@ -281,6 +292,17 @@ or VNC client, make sure to supply your own valid certificates.
 **NOTE**: Certificate files are monitored and relevant daemons are automatically
 restarted when changes are detected.
 
+### Shell Access
+
+To get shell access to a the running container, execute the following command:
+
+```
+docker exec -ti CONTAINER sh
+```
+
+Where `CONTAINER` is the ID or the name of the container used during its
+creation (e.g. `crashplan-pro`).
+
 ### VNC Password
 
 To restrict access to your application, a password can be specified.  This can
@@ -301,18 +323,6 @@ connection to prevent sending the password in clear over an unencrypted channel.
 the Remote Framebuffer Protocol [RFC](https://tools.ietf.org/html/rfc6143) (see
 section [7.2.2](https://tools.ietf.org/html/rfc6143#section-7.2.2)).  Any
 characters beyhond the limit are ignored.
-{% for item in defs.app.documentation.section %}
-
-{% for i in range(item.title['@level']|int) %}#{% endfor %} {{ item.title['#text'] }}
-  {% if item.content %}
-
-{{ item.content }}
-  {% endif %}
-{% endfor %}
-
-{% for item in defs.documentation.link|list + defs.app.documentation.link|list %}
-[{{ item.name }}]: {{ item.url }}
-{% endfor %}
 
 ## Reverse Proxy
 
@@ -410,8 +420,20 @@ server {
 }
 
 ```
-
 {% endif %}
+{% for item in defs.app.documentation.section %}
+
+{% for i in range(item.title['@level']|int) %}#{% endfor %} {{ item.title['#text'] }}
+  {% if item.content %}
+
+{{ item.content }}
+  {% endif %}
+{% endfor %}
+
+{% for item in defs.documentation.link|list + defs.app.documentation.link|list %}
+[{{ item.name }}]: {{ item.url }}
+{% endfor %}
+
 ## Support or Contact
 
 Having troubles with the container or have questions?  Please
