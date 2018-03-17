@@ -217,6 +217,32 @@ docker rm {{ defs.app.name }}
 ```
   4. Start the container using the `docker run` command.
 
+### Synology
+
+For owners of a Synology NAS, the following steps can be use to update a
+container image.
+
+  1.  Open the *Docker* application.
+  2.  Click on *Registry* in the left pane.
+  3.  In the search bar, type the name of the container (`jlesage/docker-{{ defs.app.name }}`).
+  4.  Select the image, click *Download* and then choose the `latest` tag.
+  5.  Wait for the download to complete.  A  notification will appear once done.
+  6.  Click on *Container* in the left pane.
+  7.  Select your {{ defs.app.friendly_name }} container.
+  8.  Stop it by clicking *Action*->*Stop*.
+  9.  Clear the container by clicking *Action*->*Clear*.  This removes the
+      container while keeping its configuration.
+  10. Start the container again by clicking *Action*->*Start*. **NOTE**:  The
+      container may temporarily disappear from the list while it is re-created.
+
+### unRAID
+
+For unRAID, a container image can be updated by following these steps:
+
+  1. Select the *Docker* tab.
+  2. Click the *Check for Updates* button at the bottom of the page.
+  3. Click the *update ready* link of the container to be updated.
+
 ## User/Group IDs
 
 When using data volumes (`-v` flags), permissions issues can occur between the
@@ -292,17 +318,6 @@ or VNC client, make sure to supply your own valid certificates.
 **NOTE**: Certificate files are monitored and relevant daemons are automatically
 restarted when changes are detected.
 
-### Shell Access
-
-To get shell access to a the running container, execute the following command:
-
-```
-docker exec -ti CONTAINER sh
-```
-
-Where `CONTAINER` is the ID or the name of the container used during its
-creation (e.g. `crashplan-pro`).
-
 ### VNC Password
 
 To restrict access to your application, a password can be specified.  This can
@@ -323,6 +338,17 @@ connection to prevent sending the password in clear over an unencrypted channel.
 the Remote Framebuffer Protocol [RFC](https://tools.ietf.org/html/rfc6143) (see
 section [7.2.2](https://tools.ietf.org/html/rfc6143#section-7.2.2)).  Any
 characters beyhond the limit are ignored.
+
+## Shell Access
+
+To get shell access to a the running container, execute the following command:
+
+```
+docker exec -ti CONTAINER sh
+```
+
+Where `CONTAINER` is the ID or the name of the container used during its
+creation (e.g. `crashplan-pro`).
 
 ## Reverse Proxy
 
