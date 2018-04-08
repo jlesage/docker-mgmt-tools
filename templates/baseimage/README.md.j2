@@ -128,7 +128,7 @@ ENV APP_NAME="{{ 'Xterm' if defs.baseimage.gui|upper == 'TRUE' else 'http-server
 
 {% if defs.baseimage.gui|upper == 'FALSE' %}
 # Expose ports.
-EXPORT 8080
+EXPOSE 8080
 {% endif %}
 ```
 
