@@ -1,0 +1,28 @@
+#!/bin/bash
+
+echoerr() { echo "$@" 1>&2; }
+
+usage() {
+    echoerr "usage: $(basename $0) GIT_TAG"
+}
+
+TAG="$1"
+
+if [ -z "$TAG" ]; then
+    echoerr "Git tag must be specified."
+    echoerr
+    usage
+    exit 1
+fi
+
+if [[ "$TAG" =~ v[0-9]+\.[0-9]+\.[0-9]+-alpha[0-9]+$ ]]; then
+    echo "ALPHA"
+elif [[ "$TAG" =~ v[0-9]+\.[0-9]+\.[0-9]+-beta[0-9]+$ ]]; then
+    echo "BETA"
+elif [[ "$TAG" =~ v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]+$ ]]; then
+    echo "RC"
+elif [[ "$TAG" =~ v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "RELEASE"
+else
+    echo "DEV"
+fi
