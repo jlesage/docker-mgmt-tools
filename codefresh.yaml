@@ -1,0 +1,90 @@
+version: '1.0'
+steps:
+  CloningTools:
+    title: Cloning Tools
+    type: git-clone
+    repo: https://github.com/jlesage/docker-mgmt-tools
+
+  ExportingBuildType:
+    title: Exporting Build Type
+    image: codefresh/cfbase
+    commands:
+      - cf_export BUILD_TYPE="$(${CF_VOLUME_PATH}/docker-mgmt-tools/get_build_type_from_git_tag "${CF_BRANCH_TAG_NORMALIZED}")"
+
+  ExportingDockerImageLatestTag:
+    title: Exporting Docker Image Latest Tag
+    image: codefresh/cfbase
+    commands:
+      - cf_export DOCKER_IMAGE_LATEST_TAG="$(${CF_VOLUME_PATH}/docker-mgmt-tools/get_docker_latest_tag_from_git_tag "${CF_BRANCH_TAG_NORMALIZED}")"
+
+  ExportingDockerImageName:
+    title: Exporting Docker Image Name
+    image: codefresh/cfbase
+    commands:
+      - cf_export DOCKER_IMAGE_NAME="$(echo ${{CF_REPO_NAME}} | sed 's/docker-//')"
+
+  SettingDockerImageVersion:
+    title: Setting Docker Image Version
+    image: codefresh/cfbase
+    commands:
+      - sed -i 's/org.label-schema.version="unknown"/org.label-schema.version="'${CF_BRANCH_TAG_NORMALIZED:1}'"/' Dockerfile
+    when:
+      condition:
+        any:
+          isReleaseBuild: '"${{BUILD_TYPE}}" == "RELEASE"'
+          isAlphaBuild: '"${{BUILD_TYPE}}" == "ALPHA"'
+          isBetaBuild: '"${{BUILD_TYPE}}" == "BETA"'
+          isRCBuild: '"${{BUILD_TYPE}}" == "RC"'
+
+  BuildingDockerImage:
+    title: Building Docker Image
+    type: build
+    image_name: ${{CF_REPO_OWNER}}/${{DOCKER_IMAGE_NAME}}
+
+  PushingDockerImage:
+    title: Pushing to Docker Registry
+    type: push
+    candidate: '${{BuildingDockerImage}}'
+    tag: ${{CF_BRANCH_TAG_NORMALIZED}}
+    registry: docker.io
+    credentials:
+      username: '${{dockerRegistryUsername}}'
+      password: '${{dockerRegistryPassword}}'
+    when:
+      condition:
+        any:
+          isReleaseBuild: '"${{BUILD_TYPE}}" == "RELEASE"'
+          isAlphaBuild: '"${{BUILD_TYPE}}" == "ALPHA"'
+          isBetaBuild: '"${{BUILD_TYPE}}" == "BETA"'
+          isRCBuild: '"${{BUILD_TYPE}}" == "RC"'
+
+  PushingDockerLatestTag:
+    title: Pushing the 'latest' tag to Docker Registry
+    type: push
+    candidate: '${{BuildingDockerImage}}'
+    tag: ${{DOCKER_IMAGE_LATEST_TAG}}
+    registry: docker.io
+    credentials:
+      username: '${{dockerRegistryUsername}}'
+      password: '${{dockerRegistryPassword}}'
+    when:
+      condition:
+        any:
+          isReleaseBuild: '"${{BUILD_TYPE}}" == "RELEASE"'
+          isAlphaBuild: '"${{BUILD_TYPE}}" == "ALPHA"'
+          isBetaBuild: '"${{BUILD_TYPE}}" == "BETA"'
+          isRCBuild: '"${{BUILD_TYPE}}" == "RC"'
+
+  PushingReadme:
+    title: Pushing README to Docker Registry
+    image: sheogorath/readme-to-dockerhub
+    environment:
+      - README_PATH=${{CF_VOLUME_PATH}}/${{CF_REPO_NAME}}/README.md
+      - DOCKERHUB_USERNAME=${{dockerRegistryUsername}}
+      - DOCKERHUB_PASSWORD=${{dockerRegistryPassword}}
+      - DOCKERHUB_REPO_PREFIX=${{CF_REPO_OWNER}}
+      - DOCKERHUB_REPO_NAME=${{DOCKER_IMAGE_NAME}}
+    when:
+      condition:
+        all:
+          isReleaseBuild: '"${{BUILD_TYPE}}" == "RELEASE"'
