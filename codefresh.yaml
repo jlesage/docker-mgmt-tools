@@ -9,6 +9,7 @@ steps:
     title: Exporting Build Type
     image: codefresh/cfbase
     commands:
+      - echo "CF_BRANCH_TAG_NORMALIZED=$CF_BRANCH_TAG_NORMALIZED"
       - cf_export BUILD_TYPE="$(${CF_VOLUME_PATH}/docker-mgmt-tools/get_build_type_from_git_tag "${CF_BRANCH_TAG_NORMALIZED}")"
 
   ExportingDockerImageLatestTag:
