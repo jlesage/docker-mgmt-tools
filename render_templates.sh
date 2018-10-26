@@ -42,7 +42,7 @@ get_app_data_sources() {
     DATA_SOURCES="'$DATA_SOURCE'"
 
     # Add data source from GUI baseimage.
-    if cat "$DATA_SOURCE" | grep -iq '<gui>true</gui>'; then
+    if cat "$DATA_SOURCE" | grep -iq '<gui_type>x11</gui_type>'; then
         if [ -f "$SCRIPT_DIR/../docker-baseimage-gui/baseimagedefs.xml" ]; then
             DATA_SOURCES="'$(realpath "$SCRIPT_DIR/../docker-baseimage-gui/baseimagedefs.xml")' $DATA_SOURCES"
         else

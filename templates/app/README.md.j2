@@ -67,8 +67,14 @@ Where:
   {% endif %}
 {% endfor %}
 
-Browse to `http://your-host-ip:5800` to access the {{ defs.app.friendly_name }} GUI.  Files from
-the host appear under the `/storage` folder in the container.
+{% if defs.app.gui_type.lower() == 'web' %}
+Browse to `http://your-host-ip:{{ defs.app.gui_port }}` to access the {{ defs.app.friendly_name }} web interface.
+{% elif defs.app.gui_type.lower() == 'x11' %}
+Browse to `http://your-host-ip:5800` to access the {{ defs.app.friendly_name }} GUI.
+{% endif %}
+{% if '/storage' not in defs.app.container.unsupported_volume %}
+Files from the host appear under the `/storage` folder in the container.
+{% endif %}
 
 ## Usage
 
@@ -268,7 +274,17 @@ uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),
 The value of `uid` (user ID) and `gid` (group ID) are the ones that you should
 be given the container.
 
-{% if defs.app.gui.lower() == 'true' %}
+{% if defs.app.gui_type.lower() == 'web' %}
+## Accessing the GUI
+
+Assuming that container's ports are mapped to the same host's ports, the
+interface of the application can be accessed with a web browser at:
+
+```
+http://<HOST IP ADDR>:{{ defs.app.gui_port }}
+```
+
+{% elif defs.app.gui_type.lower() == 'x11' %}
 ## Accessing the GUI
 
 Assuming that container's ports are mapped to the same host's ports, the
