@@ -7,7 +7,7 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 FORCE_LIST="environment_variable,volume,port,change,link,section,release,overview,device,unsupported_volume,extra_param"
 
 usage() {
-    echo "usage: $(basename $0) WORKPATH [-r|-u]
+    echo "usage: $(basename $0) WORKPATH [OPTIONS...]
 
 Generate the README.md and unRAID template of one or multiple Docker containers.
 
@@ -15,7 +15,8 @@ Arguments:
   WORKPATH         Working path.  See notes below.
 
 Options:
-  -r               Only generate the README.md.
+  -r               Only generate README.md.
+  -d               Only generate DOCKERHUB.md.
   -u               Only generate unRAID template.
 
 The data source for templates are stored in:
@@ -25,7 +26,7 @@ The data source for templates are stored in:
 WORKPATH can be:
   1) The path to the template data source file.
   2) The directory in which a template data source file can be found.
-  3) The directory containing the 'docker-*/' folders in which  template data
+  3) The directory containing the 'docker-*/' folders in which template data
      source files can be found.
 "
 }
@@ -115,6 +116,14 @@ generate_app_readme() {
     rm "$TOC"
 }
 
+generate_app_dockerhub_readme() {
+    DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
+    DATA_SOURCES="$(get_app_data_sources "$DATA_SOURCE")"
+    README="$(dirname "$DATA_SOURCE")/DOCKERHUB.md"
+
+    eval "generate '$SCRIPT_DIR/templates/app/DOCKERHUB.md.j2' '$README' $DATA_SOURCES"
+}
+
 generate_app_unraid_template() {
     DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
     DATA_SOURCES="$(get_app_data_sources "$DATA_SOURCE")"
@@ -130,9 +139,11 @@ generate_app_all() {
     OPT="${2:-UNSET}"
     case "$OPT" in
         -r) generate_app_readme "$1" ;;
+        -d) generate_app_dockerhub_readme "$1" ;;
         -u) generate_app_unraid_template "$1" ;;
         *)
             generate_app_readme "$1"
+            generate_app_dockerhub_readme "$1"
             generate_app_unraid_template "$1"
             ;;
     esac
@@ -157,6 +168,7 @@ generate_baseimage_all() {
     OPT="${2:-UNSET}"
     case "$OPT" in
         -r) generate_baseimage_readme "$1" ;;
+        -d) ;;
         -u) ;;
         *)
             generate_baseimage_readme "$1"
