@@ -18,6 +18,7 @@ Options:
   -r               Only generate README.md.
   -d               Only generate DOCKERHUB.md.
   -u               Only generate unRAID template.
+  -y               Only generate drone.yml.
 
 The data source for templates are stored in:
   - appdefs.xml for Docker containers running an application.
@@ -135,16 +136,26 @@ generate_app_unraid_template() {
     eval "generate '$SCRIPT_DIR/templates/app/unraid_template.xml.j2' '$UNRAID_TEMPLATE' $DATA_SOURCES"
 }
 
+generate_app_drone_yml() {
+    DATA_SOURCE="$(realpath "$1" 2> /dev/null)"
+    DATA_SOURCES="$(get_app_data_sources "$DATA_SOURCE")"
+    YML="$(dirname "$DATA_SOURCE")/.drone.yml"
+
+    eval "generate '$SCRIPT_DIR/templates/app/drone.yml.j2' '$YML' $DATA_SOURCES --max-num-passes=1"
+}
+
 generate_app_all() {
     OPT="${2:-UNSET}"
     case "$OPT" in
         -r) generate_app_readme "$1" ;;
         -d) generate_app_dockerhub_readme "$1" ;;
         -u) generate_app_unraid_template "$1" ;;
+        -y) generate_app_drone_yml "$1" ;;
         *)
             generate_app_readme "$1"
             generate_app_dockerhub_readme "$1"
             generate_app_unraid_template "$1"
+            #generate_app_drone_yml "$1"
             ;;
     esac
 }
@@ -170,6 +181,7 @@ generate_baseimage_all() {
         -r) generate_baseimage_readme "$1" ;;
         -d) ;;
         -u) ;;
+        -y) ;;
         *)
             generate_baseimage_readme "$1"
             ;;
