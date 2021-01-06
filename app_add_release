@@ -124,7 +124,7 @@ if [ -d "$APPDIR"/.git ]; then
     git -C "$APPDIR" --no-pager diff "$APPFILE"
     if promptyn 'Proceed'; then
         git -C "$APPDIR" add "$APPFILE" && \
-        git -C "$APPDIR" commit -m "Added changelog for version $VERSION." && \
+        git -C "$APPDIR" commit -m "Added changelog for version $VERSION. [skip ci]" && \
         git -C "$APPDIR" push origin master
         [ "$?" -eq 0 ] || die "Failed to commit changes."
     else
