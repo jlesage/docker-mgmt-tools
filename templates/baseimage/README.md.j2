@@ -48,7 +48,7 @@ Different docker images are available:
 [Ubuntu 16.04 LTS]: http://releases.ubuntu.com/16.04/
 [Ubuntu 18.04 LTS]: http://releases.ubuntu.com/18.04/
 
-Due to its size, the `Alpine` image is recommended.  However, it may be harder
+Due to its size, an `Alpine` image is recommended.  However, it may be harder
 to integrate your application (especially third party ones without source code),
 because:
  1. Packages repository may not be as complete as `Ubuntu`/`Debian`.
@@ -56,13 +56,12 @@ because:
  3. The `Alpine` distribution uses the [musl] C standard library instead of
  GNU C library ([glibc]).
 
-Note that using the `Alpine` image with glibc integrated (`alpine-3.5-glibc`
+Note that using an `Alpine` image with glibc integrated (`alpine-3.5-glibc`
 tag) may ease integration of applications.
 
-The next choice is to use the `Debian` image.  It provides a great compatibility
+The next choice is to use a `Debian` image.  It provides a great compatibility
 and its size is smaller than the `Ubuntu` one.  Finally, if for any reason you
-prefer an `Ubuntu` image, one based on the stable `16.04 LTS` version is
-provided.
+prefer an `Ubuntu` image, stable `LTS` versions are provided.
 
 [musl]: https://www.musl-libc.org/
 [glibc]: https://www.gnu.org/software/libc/
