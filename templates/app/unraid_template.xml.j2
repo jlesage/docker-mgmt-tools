@@ -127,7 +127,7 @@
   <!-- Port Mappings -->
 {% for item in defs.container.ports.port %}
   {% if item.unraid_template is defined %}
-  <Config Name="{{ item.unraid_template.title }}" Target="{{ item.number }}" Default="{{ item.unraid_template.default|default(item.number, true) }}" Mode="{{ item.protocol }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}" Type="Port" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
+  <Config Name="{{ item.unraid_template.title }}" Target="{{ item.number }}" Default="{{ item.unraid_template.default|default(item.number, true) }}" Mode="{{ item.protocol }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('[', '&amp;lt;')|replace(']', '&amp;gt;') }}&amp;lt;br&amp;gt;&amp;lt;b&amp;gt;NOTE:&amp;lt;/b&amp;gt; This applies only when &amp;lt;i&amp;gt;Network Type&amp;lt;/i&amp;gt; is set to &amp;lt;i&amp;gt;Bridge&amp;lt;/i&amp;gt;.  For other network types, port {{ item.number }} should be used instead." Type="Port" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
   {% endif %}
 {% endfor %}
 </Container>
