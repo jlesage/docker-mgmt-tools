@@ -52,16 +52,16 @@
   <Beta>False</Beta>
   <Project>{{ defs.app.project.url }}</Project>
   <Date>{{ defs.app.history.release[0].date }}</Date>
-  <Changes>[font size=4][center]{{ defs.app.friendly_name }} Change Log[/center][/font]
+  <Changes>
 {% for item in defs.app.history.release %}
-[font size=3][b]v{{ item.version }}[/b][/font] ({{ item.date }})
+###v{{ item.version }} ({{ item.date }})
   {% for chg in item.change %}
     {% if chg is mapping %}
       {% set chgtext = chg['#text'] %}
     {% else %}
       {% set chgtext = chg %}
     {% endif %}
-    {% for i in range(chg['@level']|default("1")|int * 2) %}&#x00a0;{% endfor %}- {{ chgtext }}
+    {% for i in range((chg['@level']|default("1")|int - 1 )* 2) %}&#x00a0;{% endfor %}- {{ chgtext }}
   {% endfor %}
 
 {% endfor %}
