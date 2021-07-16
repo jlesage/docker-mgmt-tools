@@ -7,21 +7,21 @@
   <Privileged>false</Privileged>
   <Support>{{ defs.app.unraid.support_url }}</Support>
   <Overview>
-    {{ defs.app.project.description|replace('[', '')|replace(']', '') }}
-    [br][br]
+{{ defs.app.project.description|replace('[', '')|replace(']', '') }}
+
 {% for item in defs.app.container.overview %}
-    {{ item }}
+{{ item }}
 {% endfor %}
-    Also, being based on Alpine Linux, size of this container
-    is very small (less than {{ defs.app.container.rough_download_size }} in download size).
-    [br][br][span][/span]
-    For a complete documentation of this container, see
-    [a href="https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md"]
-    https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md[/a].
-    {% if defs.app.unraid.extra_description %}
-    [br][br]
-    {{ defs.app.unraid.extra_description }}
-    {% endif %}
+
+Also, being based on Alpine Linux, size of this container is very small (less
+than {{ defs.app.container.rough_download_size }} in download size).
+
+For a complete documentation of this container, see
+https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md
+{% if defs.app.unraid.extra_description %}
+
+{{ defs.app.unraid.extra_description }}
+{% endif %}
   </Overview>
   <Category>{{ defs.app.unraid.category }}</Category>
   <WebUI>http://[IP]:[PORT:{% if defs.app.gui_port %}{{ defs.app.gui_port }}{% else %}5800{% endif %}]</WebUI>
@@ -33,21 +33,21 @@
   <ExtraParams/>
 {% endif %}
   <Description>
-    {{ defs.app.project.description|replace('[', '')|replace(']', '') }}
-    [br][br]
+{{ defs.app.project.description|replace('[', '')|replace(']', '') }}
+
 {% for item in defs.app.container.overview %}
-    {{ item }}
+{{ item }}
 {% endfor %}
-    Also, being based on Alpine Linux, size of this container
-    is very small (less than {{ defs.app.container.rough_download_size }} in download size).
-    [br][br][span][/span]
-    For a complete documentation of this container, see
-    [a href="https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md"]
-    https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md[/a].
-    {% if defs.app.unraid.extra_description %}
-    [br][br]
-    {{ defs.app.unraid.extra_description }}
-    {% endif %}
+
+Also, being based on Alpine Linux, size of this container is very small (less
+than {{ defs.app.container.rough_download_size }} in download size).
+
+For a complete documentation of this container, see
+https://github.com/jlesage/docker-{{ defs.app.name }}/blob/master/README.md.
+{% if defs.app.unraid.extra_description %}
+
+{{ defs.app.unraid.extra_description }}
+{% endif %}
   </Description>
   <Beta>False</Beta>
   <Project>{{ defs.app.project.url }}</Project>
