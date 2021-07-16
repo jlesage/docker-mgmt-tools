@@ -177,7 +177,6 @@ version: '3'
 services:
   {{ defs.app.name }}:
     image: jlesage/{{ defs.app.name }}
-    build: .
     ports:
 {% for item in defs.container.ports.port if item.limit_doc_to|default('none') != 'baseimage' and item.mandatory == 'true' %}
       - "{{ item.number }}:{{ item.number }}"
