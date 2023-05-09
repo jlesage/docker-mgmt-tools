@@ -1,21 +1,29 @@
-# Docker container for {{ defs.app.friendly_name }}
-[![Docker Image Size](https://img.shields.io/microbadger/image-size/jlesage/{{ defs.app.name }})](http://microbadger.com/#/images/jlesage/{{ defs.app.name }}) [![Build Status](https://drone.le-sage.com/api/badges/jlesage/docker-{{ defs.app.name }}/status.svg)](https://drone.le-sage.com/jlesage/docker-{{ defs.app.name }}) [![GitHub Release](https://img.shields.io/github/release/jlesage/docker-{{ defs.app.name }}.svg)](https://github.com/jlesage/docker-{{ defs.app.name }}/releases/latest) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/JocelynLeSage/0usd)
+# Docker container for {{ app.friendly_name }}
+[![Docker Image Size](https://img.shields.io/docker/image-size/jlesage/{{ app.name }}/latest)](https://hub.docker.com/r/jlesage/{{ app.name }}/tags) [![Build Status](https://github.com/jlesage/docker-{{ app.name }}/actions/workflows/build-image.yml/badge.svg?branch=master)](https://github.com/jlesage/docker-{{ app.name }}/actions/workflows/build-image.yml) [![GitHub Release](https://img.shields.io/github/release/jlesage/docker-{{ app.name }}.svg)](https://github.com/jlesage/docker-{{ app.name }}/releases/latest) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/JocelynLeSage)
 
-This is a Docker container for [{{ defs.app.friendly_name }}]({{ defs.app.project.url }}).
-{% for item in defs.app.container.overview %}
+This is a Docker container for [{{ app.friendly_name }}]({{ app.project.url }}).
 
-{{ item }}
+{% if app.gui_type.lower() == 'x11' %}
+The GUI of the application is accessed through a modern web browser (no
+installation or configuration needed on the client side) or via any VNC client.
+{%- endif %}
+
+{% if app.documentation.overview is defined %}
+
+{{ app.documentation.overview }}
+{% endif %}
+{% if app.documentation.important is defined %}
+
+{% for item in app.documentation.important.split('\n') %}
+> {{ item }}
 {% endfor %}
-{% if defs.app.documentation.important %}
-
-{{ defs.app.documentation.important }}
 {% endif %}
 
 ---
 
-[![{{ defs.app.friendly_name }} logo](https://images.weserv.nl/?url=raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ defs.app.name }}-icon.png&w=200)]({{ defs.app.project.url }})[![{{ defs.app.friendly_name }}](https://dummyimage.com/400x110/ffffff/575757&text={{ defs.app.friendly_name|replace(' ', '+') }})]({{ defs.app.project.url }})
+[![{{ app.friendly_name }} logo](https://images.weserv.nl/?url=raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ app.name }}-icon.png&w=110)]({{ app.project.url }})[![{{ app.friendly_name }}](https://images.placeholders.dev/?width={{ app.friendly_name|length * 32 }}&height=110&fontFamily=monospace&fontWeight=400&fontSize=52&text={{ app.friendly_name|replace(' ', '%20') }}&bgColor=rgba(0,0,0,0.0)&textColor=rgba(121,121,121,1))]({{ app.project.url }})
 
-{{ defs.app.project.description }}
+{{ app.project.description }}
 
 ---
 
@@ -24,57 +32,45 @@ This is a Docker container for [{{ defs.app.friendly_name }}]({{ defs.app.projec
 **NOTE**: The Docker command provided in this quick start is given as an example
 and parameters should be adjusted to your need.
 
-Launch the {{ defs.app.friendly_name }} docker container with the following command:
-```
+Launch the {{ app.friendly_name }} docker container with the following command:
+```shell
 docker run -d \
-    --name={{ defs.app.name }} \
-{% for item in defs.container.ports.port if item.limit_doc_to|default('none') != 'baseimage' and item.mandatory == 'true' %}
+    --name={{ app.name }} \
+{% for item in container.ports|default([]) if item.include_in_quick_start|default(false) %}
     -p {{ item.number }}:{{ item.number }} \
 {% endfor %}
-{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
     -v {{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }} \
-  {% endif %}
 {% endfor %}
-{% for item in defs.container.devices.device if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.devices|default([]) if item.include_in_quick_start|default(false) %}
     --device {{ item.path }} \
-  {% endif %}
 {% endfor %}
-{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.extra_params|default([]) if item.include_in_quick_start|default(false) %}
     --{{ item.name }} {{ item.value }} \
-  {% endif %}
 {% endfor %}
-    jlesage/{{ defs.app.name }}
+    jlesage/{{ app.name }}
 ```
 
 Where:
-{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
   - `{{ item.host_path_example }}`: {{ item.description }}
-  {% endif %}
 {% endfor %}
-{% for item in defs.container.devices.device if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.devices|default([]) if item.include_in_quick_start|default(false) %}
   - `{{ item.path }}`: {{ item.description }}
-  {% endif %}
 {% endfor %}
 
-{% if defs.app.gui_type.lower() == 'web' %}
-Browse to `http://your-host-ip:{{ defs.app.gui_port }}` to access the {{ defs.app.friendly_name }} web interface.
-{% elif defs.app.gui_type.lower() == 'x11' %}
-Browse to `http://your-host-ip:5800` to access the {{ defs.app.friendly_name }} GUI.
+{% if app.gui_type.lower() == 'web' %}
+Browse to `http://your-host-ip:{{ app.gui_port }}` to access the {{ app.friendly_name }} web interface.
+{% elif app.gui_type.lower() == 'x11' %}
+Browse to `http://your-host-ip:5800` to access the {{ app.friendly_name }} GUI.
 {% endif %}
-{% if '/storage' not in defs.app.container.unsupported_volume %}
+{% if '/storage' not in container.unsupported_volume|default([]) %}
 Files from the host appear under the `/storage` folder in the container.
 {% endif %}
 
 ## Documentation
 
-Full documentation is available at https://github.com/jlesage/docker-{{ defs.app.name }}.
+Full documentation is available at https://github.com/jlesage/docker-{{ app.name }}.
 
 ## Support or Contact
 
@@ -83,4 +79,4 @@ Having troubles with the container or have questions?  Please
 
 For other great Dockerized applications, see https://jlesage.github.io/docker-apps.
 
-[create a new issue]: https://github.com/jlesage/docker-{{ defs.app.name }}/issues
+[create a new issue]: https://github.com/jlesage/docker-{{ app.name }}/issues

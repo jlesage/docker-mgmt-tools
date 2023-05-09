@@ -1,10 +1,10 @@
 #!/bin/sh
 
 usage() {
-    echo "usage: $(basename "$0") APPXML VERSION
+    echo "usage: $(basename "$0") APPYML VERSION
 
 Arguments:
-    APPXML                     Path to the application's definitions XML file.
+    APPYML                     Path to the application's definitions YML file.
     VERSION                    Version of the baseimage (e.g. 2.0.0).
 "
 }
@@ -29,15 +29,15 @@ promptyn() {
     echo "$answer" | grep -iq "^y"
 }
 
-APPXML="$1"
+APPYML="$1"
 VERSION="$2"
 
 # Validate arguments.
-[ -n "$APPXML" ] || die_usage "Application's definitions XML file is missing."
-[ -f "$APPXML" ] || die_usage "File not found: '$APPXML'"
+[ -n "$APPYML" ] || die_usage "Application's definitions YML file is missing."
+[ -f "$APPYML" ] || die_usage "File not found: '$APPYML'"
 [ -n "$VERSION" ] || die_usage "Version is missing."
 
-APPDIR="$(readlink -f "$(dirname "$APPXML")")"
+APPDIR="$(readlink -f "$(dirname "$APPYML")")"
 
 [ -f "$APPDIR"/Dockerfile ] || die_usage "File not found: '"$APPDIR"/Dockerfile'."
 

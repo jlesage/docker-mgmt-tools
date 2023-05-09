@@ -1,101 +1,99 @@
-# Docker container for {{ defs.app.friendly_name }}
-[![Docker Image Size](https://img.shields.io/docker/image-size/jlesage/{{ defs.app.name }}/latest)](https://hub.docker.com/r/jlesage/{{ defs.app.name }}/tags) [![Build Status](https://drone.le-sage.com/api/badges/jlesage/docker-{{ defs.app.name }}/status.svg)](https://drone.le-sage.com/jlesage/docker-{{ defs.app.name }}) [![GitHub Release](https://img.shields.io/github/release/jlesage/docker-{{ defs.app.name }}.svg)](https://github.com/jlesage/docker-{{ defs.app.name }}/releases/latest) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/JocelynLeSage/0usd)
+# Docker container for {{ app.friendly_name }}
+[![Docker Image Size](https://img.shields.io/docker/image-size/jlesage/{{ app.name }}/latest)](https://hub.docker.com/r/jlesage/{{ app.name }}/tags) [![Build Status](https://github.com/jlesage/docker-{{ app.name }}/actions/workflows/build-image.yml/badge.svg?branch=master)](https://github.com/jlesage/docker-{{ app.name }}/actions/workflows/build-image.yml) [![GitHub Release](https://img.shields.io/github/release/jlesage/docker-{{ app.name }}.svg)](https://github.com/jlesage/docker-{{ app.name }}/releases/latest) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/JocelynLeSage)
 
-This is a Docker container for [{{ defs.app.friendly_name }}]({{ defs.app.project.url }}).
-{% for item in defs.app.container.overview %}
+This project implements a Docker container for [{{ app.friendly_name }}]({{ app.project.url }}).
 
-{{ item }}
+{% if app.gui_type.lower() == 'x11' %}
+The GUI of the application is accessed through a modern web browser (no
+installation or configuration needed on the client side) or via any VNC client.
+{%- endif %}
+
+{% if app.documentation.overview is defined %}
+
+{{ app.documentation.overview }}
+{% endif %}
+{% if app.documentation.important is defined %}
+
+{% for item in app.documentation.important.split('\n') %}
+> {{ item }}
 {% endfor %}
-{% if defs.app.documentation.important %}
-
-{{ defs.app.documentation.important }}
 {% endif %}
 
 ---
 
-[![{{ defs.app.friendly_name }} logo](https://images.weserv.nl/?url=raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ defs.app.name }}-icon.png&w=200)]({{ defs.app.project.url }})[![{{ defs.app.friendly_name }}](https://dummyimage.com/400x110/ffffff/575757&text={{ defs.app.friendly_name|replace(' ', '+') }})]({{ defs.app.project.url }})
+[![{{ app.friendly_name }} logo](https://images.weserv.nl/?url=raw.githubusercontent.com/jlesage/docker-templates/master/jlesage/images/{{ app.name }}-icon.png&w=110)]({{ app.project.url }})[![{{ app.friendly_name }}](https://images.placeholders.dev/?width={{ app.friendly_name|length * 32 }}&height=110&fontFamily=monospace&fontWeight=400&fontSize=52&text={{ app.friendly_name|replace(' ', '%20') }}&bgColor=rgba(0,0,0,0.0)&textColor=rgba(121,121,121,1))]({{ app.project.url }})
 
-{{ defs.app.project.description }}
+{{ app.project.description }}
 
 ---
 
 ## Table of Content
 
-TABLE_OF_CONTENT
+<!--ts-->
+<!--te-->
 
 ## Quick Start
 
 **NOTE**: The Docker command provided in this quick start is given as an example
 and parameters should be adjusted to your need.
 
-Launch the {{ defs.app.friendly_name }} docker container with the following command:
-```
+Launch the {{ app.friendly_name }} docker container with the following command:
+```shell
 docker run -d \
-    --name={{ defs.app.name }} \
-{% for item in defs.container.ports.port if item.limit_doc_to|default('none') != 'baseimage' and item.mandatory == 'true' %}
+    --name={{ app.name }} \
+{% for item in container.ports|default([]) if item.include_in_quick_start|default(false) %}
     -p {{ item.number }}:{{ item.number }} \
 {% endfor %}
-{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
     -v {{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }} \
-  {% endif %}
 {% endfor %}
-{% for item in defs.container.devices.device if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.devices|default([]) if item.include_in_quick_start|default(false) %}
     --device {{ item.path }} \
-  {% endif %}
 {% endfor %}
-{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.extra_params|default([]) if item.include_in_quick_start|default(false) %}
     --{{ item.name }} {{ item.value }} \
-  {% endif %}
 {% endfor %}
-    jlesage/{{ defs.app.name }}
+    jlesage/{{ app.name }}
 ```
 
 Where:
-{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
   - `{{ item.host_path_example }}`: {{ item.description }}
-  {% endif %}
 {% endfor %}
-{% for item in defs.container.devices.device if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
+{% for item in container.devices|default([]) if item.include_in_quick_start|default(false) %}
   - `{{ item.path }}`: {{ item.description }}
-  {% endif %}
 {% endfor %}
 
-{% if defs.app.gui_type.lower() == 'web' %}
-Browse to `http://your-host-ip:{{ defs.app.gui_port }}` to access the {{ defs.app.friendly_name }} web interface.
-{% elif defs.app.gui_type.lower() == 'x11' %}
-Browse to `http://your-host-ip:5800` to access the {{ defs.app.friendly_name }} GUI.
+{% if app.gui_type.lower() == 'web' %}
+Browse to `http://your-host-ip:{{ app.gui_port }}` to access the {{ app.friendly_name }} web interface.
+{% elif app.gui_type.lower() == 'x11' %}
+Browse to `http://your-host-ip:5800` to access the {{ app.friendly_name }} GUI.
 {% endif %}
-{% if '/storage' not in defs.app.container.unsupported_volume %}
+{% if '/storage' not in container.unsupported_volume|default([]) %}
 Files from the host appear under the `/storage` folder in the container.
 {% endif %}
 
 ## Usage
 
-```
+```shell
 docker run [-d] \
-    --name={{ defs.app.name }} \
+    --name={{ app.name }} \
     [-e <VARIABLE_NAME>=<VALUE>]... \
     [-v <HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]]... \
     [-p <HOST_PORT>:<CONTAINER_PORT>]... \
-{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
+{% for item in container.extra_params|default([]) %}
     --{{ item.name }} VALUE \
 {% endfor %}
-    jlesage/{{ defs.app.name }}
+    jlesage/{{ app.name }}
 ```
+
 | Parameter | Description |
 |-----------|-------------|
 | -d        | Run the container in the background.  If not set, the container runs in the foreground. |
 | -e        | Pass an environment variable to the container.  See the [Environment Variables](#environment-variables) section for more details. |
 | -v        | Set a volume mapping (allows to share a folder/file between the host and the container).  See the [Data Volumes](#data-volumes) section for more details. |
 | -p        | Set a network port mapping (exposes an internal container port to the host).  See the [Ports](#ports) section for more details. |
-{% for item in defs.container.extra_params.extra_param if item.limit_doc_to|default('none') != 'baseimage' %}
+{% for item in container.extra_params|default([]) %}
 | --{{ item.name }} | {{ item.description }} |
 {% endfor %}
 
@@ -107,9 +105,47 @@ of this parameter has the format `<VARIABLE_NAME>=<VALUE>`.
 
 | Variable       | Description                                  | Default |
 |----------------|----------------------------------------------|---------|
-{% for item in defs.container.environment_variables.environment_variable if item.limit_doc_to|default('none') != 'baseimage' %}
-|`{{ item.name }}`| {{ item.description }} | {% if item.default %}`{{ item.default }}`{% else %}(unset){% endif %} |
+{% for item in container.environment_variables|default([]) if item.type == 'public' %}
+|`{{ item.name }}`| {{ item.description }} | {% if item.default is defined and item.default is not none %}`{{ item.default }}`{% else %}(no value){% endif %} |
 {% endfor %}
+
+#### Deployment Considerations
+
+Many tools used to manage Docker containers extract environment variables
+defined by the Docker image and use them to create/deploy the container.  For
+example, this is done by:
+  - The Docker application on Synology NAS
+  - The Container Station on QNAP NAS
+  - Portainer
+  - etc.
+
+While this can be useful for the user to adjust the value of environment
+variables to fit its needs, it can also be confusing and dangerous to keep all
+of them.
+
+A good pratice is to set/keep only the variables that are needed for the
+container to behave as desired in a specific setup.  If the value of variable is
+kept to its default value, it means that it can be removed.  Keep in mind that
+all variables are optional, meaning that none of them is required for the
+container to start.
+
+Removing environment variables that are not needed provides some advantages:
+
+  - Prevents keeping variables that are no longer used by the container.  Over
+    time, with image updates, some variables might be removed.
+  - Allows the Docker image to change/fix a default value.  Again, with image
+    updates, the default value of a variable might be changed to fix an issue,
+    or to better support a new feature.
+  - Prevents changes to a variable that might affect the correct function of
+    the container.  Some undocumented variables, like `PATH` or `ENV`, are
+    required to be exposed, but are not meant to be changed by users.  However,
+    container management tools still show these variables to users.
+  - There is a bug with the Container Station on QNAP and the Docker application
+    on Synology, where an environment variable without value might not be
+    allowed.  This behavior is wrong: it's absolutely fine to have a variable
+    without value.  In fact, this container does have variables without value by
+    default.  Thus, removing uneeded variables is a good way to prevent
+    deployment issue on these devices.
 
 ### Data Volumes
 
@@ -119,8 +155,7 @@ format: `<HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]`.
 
 | Container path  | Permissions | Description |
 |-----------------|-------------|-------------|
-{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
+{% for item in container.volumes|default([]) if not item.container_path in container.unsupported_volume|default([])%}
   {% if item.description %}
 |`{{ item.container_path }}`| {{ item.permissions }} | {{ item.description }} |
   {% endif %}
@@ -135,8 +170,8 @@ container cannot be changed, but you are free to use any port on the host side.
 
 | Port | Mapping to host | Description |
 |------|-----------------|-------------|
-{% for item in defs.container.ports.port if item.limit_doc_to|default('none') != 'baseimage' %}
-| {{ item.number }} | {{ 'Mandatory' if item.mandatory == 'true' else 'Optional' }} | {{ item.description }} |
+{% for item in container.ports|default([]) %}
+| {{ item.number }} | {{ 'Mandatory' if item.mandatory else 'Optional' }} | {{ item.description }} |
 {% endfor %}
 
 ### Changing Parameters of a Running Container
@@ -150,11 +185,11 @@ re-create the container:
 
   1. Stop the container (if it is running):
 ```
-docker stop {{ defs.app.name }}
+docker stop {{ app.name }}
 ```
   2. Remove the container:
 ```
-docker rm {{ defs.app.name }}
+docker rm {{ app.name }}
 ```
   3. Create/start the container using the `docker run` command, by adjusting
      parameters as needed.
@@ -175,34 +210,42 @@ ports are part of the example.
 ```yaml
 version: '3'
 services:
-  {{ defs.app.name }}:
-    image: jlesage/{{ defs.app.name }}
+  {{ app.name }}:
+    image: jlesage/{{ app.name }}
     ports:
-{% for item in defs.container.ports.port if item.limit_doc_to|default('none') != 'baseimage' and item.mandatory == 'true' %}
+{% for item in container.ports|default([]) if item.include_in_quick_start|default(false) %}
       - "{{ item.number }}:{{ item.number }}"
 {% endfor %}
 {% set param_name_printed = [False] %}
-{% for item in defs.container.volumes.volume if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.container_path in defs.app.container.unsupported_volume %}{% continue %}{% endif %}
-  {% if item.include_in_quick_start == 'true' %}
-    {% if not param_name_printed[0] %}
-      {% set _ = param_name_printed.append(not param_name_printed.pop()) %}
+{% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
+  {% if not param_name_printed[0] %}
+    {% set _ = param_name_printed.append(not param_name_printed.pop()) %}
     volumes:
-    {% endif %}
-      - "{{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }}"
   {% endif %}
+      - "{{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }}"
 {% endfor %}
 {% set param_name_printed = [False] %}
-{% for item in defs.container.devices.device if item.limit_doc_to|default('none') != 'baseimage' %}
-  {% if item.include_in_quick_start == 'true' %}
-    {% if not param_name_printed[0] %}
-      {% set _ = param_name_printed.append(not param_name_printed.pop()) %}
+{% for item in container.devices|default([]) if item.include_in_quick_start|default(false) %}
+  {% if not param_name_printed[0] %}
+    {% set _ = param_name_printed.append(not param_name_printed.pop()) %}
     devices:
-    {% endif %}
-      - "{{ item.path }}:{{ item.path }}"
   {% endif %}
+      - "{{ item.path }}:{{ item.path }}"
 {% endfor %}
 ```
+
+## Docker Image Versioning
+
+Each release of a Docker image is versioned.  Prior to october 2022, the
+[semantic versioning](https://semver.org) was used as the versioning scheme.
+
+Since then, versioning scheme changed to
+[calendar versioning](https://calver.org).  The format used is `YY.MM.SEQUENCE`,
+where:
+  - `YY` is the zero-padded year (relative to year 2000).
+  - `MM` is the zero-padded month.
+  - `SEQUENCE` is the incremental release number within the month (first release
+    is 1, second is 2, etc).
 
 ## Docker Image Update
 
@@ -214,7 +257,7 @@ The system used to run the container may have a built-in way to update
 containers.  If so, this could be your primary way to update Docker images.
 
 An other way is to have the image be automatically updated with [Watchtower].
-Whatchtower is a container-based solution for automating Docker image updates.
+Watchtower is a container-based solution for automating Docker image updates.
 This is a "set and forget" type of solution: once a new image is available,
 Watchtower will seamlessly perform the necessary steps to update the container.
 
@@ -222,15 +265,15 @@ Finally, the Docker image can be manually updated with these steps:
 
   1. Fetch the latest image:
 ```
-docker pull jlesage/{{ defs.app.name }}
+docker pull jlesage/{{ app.name }}
 ```
   2. Stop the container:
 ```
-docker stop {{ defs.app.name }}
+docker stop {{ app.name }}
 ```
   3. Remove the container:
 ```
-docker rm {{ defs.app.name }}
+docker rm {{ app.name }}
 ```
   4. Create and start the container using the `docker run` command, with the
 the same parameters that were used when it was deployed initially.
@@ -244,11 +287,11 @@ container image.
 
   1.  Open the *Docker* application.
   2.  Click on *Registry* in the left pane.
-  3.  In the search bar, type the name of the container (`jlesage/{{ defs.app.name }}`).
+  3.  In the search bar, type the name of the container (`jlesage/{{ app.name }}`).
   4.  Select the image, click *Download* and then choose the `latest` tag.
   5.  Wait for the download to complete.  A  notification will appear once done.
   6.  Click on *Container* in the left pane.
-  7.  Select your {{ defs.app.friendly_name }} container.
+  7.  Select your {{ app.friendly_name }} container.
   8.  Stop it by clicking *Action*->*Stop*.
   9.  Clear the container by clicking *Action*->*Reset* (or *Action*->*Clear* if
       you don't have the latest *Docker* application).  This removes the
@@ -289,28 +332,30 @@ uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),
 The value of `uid` (user ID) and `gid` (group ID) are the ones that you should
 be given the container.
 
-{% if defs.app.gui_type.lower() == 'web' %}
+{% if app.gui_type.lower() == 'web' %}
 ## Accessing the GUI
 
 Assuming that container's ports are mapped to the same host's ports, the
 interface of the application can be accessed with a web browser at:
 
 ```
-http://<HOST IP ADDR>:{{ defs.app.gui_port }}
+http://<HOST IP ADDR>:{{ app.gui_port }}
 ```
 
-{% elif defs.app.gui_type.lower() == 'x11' %}
+{% elif app.gui_type.lower() == 'x11' %}
 ## Accessing the GUI
 
 Assuming that container's ports are mapped to the same host's ports, the
 graphical interface of the application can be accessed via:
 
   * A web browser:
+
 ```
 http://<HOST IP ADDR>:5800
 ```
 
   * Any VNC client:
+
 ```
 <HOST IP ADDR>:5900
 ```
@@ -405,7 +450,7 @@ In this scenario, each hostname is routed to a different application/container.
 
 For example, let's say the reverse proxy server is running on the same machine
 as this container.  The server would proxy all HTTP requests sent to
-`{{ defs.app.name }}.domain.tld` to the container at `127.0.0.1:5800`.
+`{{ app.name }}.domain.tld` to the container at `127.0.0.1:5800`.
 
 Here are the relevant configuration elements that would be added to the NGINX
 configuration:
@@ -416,7 +461,7 @@ map $http_upgrade $connection_upgrade {
 	''      close;
 }
 
-upstream docker-{{ defs.app.name }} {
+upstream docker-{{ app.name }} {
 	# If the reverse proxy server is not running on the same machine as the
 	# Docker container, use the IP of the Docker host here.
 	# Make sure to adjust the port according to how port 5800 of the
@@ -427,14 +472,14 @@ upstream docker-{{ defs.app.name }} {
 server {
 	[...]
 
-	server_name {{ defs.app.name }}.domain.tld;
+	server_name {{ app.name }}.domain.tld;
 
 	location / {
-	        proxy_pass http://docker-{{ defs.app.name }};
+	        proxy_pass http://docker-{{ app.name }};
 	}
 
 	location /websockify {
-		proxy_pass http://docker-{{ defs.app.name }};
+		proxy_pass http://docker-{{ app.name }};
 		proxy_http_version 1.1;
 		proxy_set_header Upgrade $http_upgrade;
 		proxy_set_header Connection $connection_upgrade;
@@ -451,7 +496,7 @@ route to different applications/containers.
 
 For example, let's say the reverse proxy server is running on the same machine
 as this container.  The server would proxy all HTTP requests for
-`server.domain.tld/{{ defs.app.name }}` to the container at `127.0.0.1:5800`.
+`server.domain.tld/{{ app.name }}` to the container at `127.0.0.1:5800`.
 
 Here are the relevant configuration elements that would be added to the NGINX
 configuration:
@@ -462,7 +507,7 @@ map $http_upgrade $connection_upgrade {
 	''      close;
 }
 
-upstream docker-{{ defs.app.name }} {
+upstream docker-{{ app.name }} {
 	# If the reverse proxy server is not running on the same machine as the
 	# Docker container, use the IP of the Docker host here.
 	# Make sure to adjust the port according to how port 5800 of the
@@ -473,11 +518,11 @@ upstream docker-{{ defs.app.name }} {
 server {
 	[...]
 
-	location = /{{ defs.app.name }} {return 301 $scheme://$http_host/{{ defs.app.name }}/;}
-	location /{{ defs.app.name }}/ {
-		proxy_pass http://docker-{{ defs.app.name }}/;
-		location /{{ defs.app.name }}/websockify {
-			proxy_pass http://docker-{{ defs.app.name }}/websockify/;
+	location = /{{ app.name }} {return 301 $scheme://$http_host/{{ app.name }}/;}
+	location /{{ app.name }}/ {
+		proxy_pass http://docker-{{ app.name }}/;
+		location /{{ app.name }}/websockify {
+			proxy_pass http://docker-{{ app.name }}/websockify/;
 			proxy_http_version 1.1;
 			proxy_set_header Upgrade $http_upgrade;
 			proxy_set_header Connection $connection_upgrade;
@@ -492,23 +537,19 @@ server {
 
 To get shell access to the running container, execute the following command:
 
-```
+```shell
 docker exec -ti CONTAINER sh
 ```
 
 Where `CONTAINER` is the ID or the name of the container used during its
-creation (e.g. `crashplan-pro`).
-{% for item in defs.app.documentation.section %}
+creation.
+{% for item in app.documentation.sections|default([]) %}
 
-{% for i in range(item.title['@level']|int) %}#{% endfor %} {{ item.title['#text'] }}
-  {% if item.content %}
+{% for i in range(item.level|int) %}#{% endfor %} {{ item.title }}
+  {% if item.content is defined %}
 
 {{ item.content }}
   {% endif %}
-{% endfor %}
-
-{% for item in defs.documentation.link|list + defs.app.documentation.link|list %}
-[{{ item.name }}]: {{ item.url }}
 {% endfor %}
 
 ## Support or Contact
@@ -518,4 +559,4 @@ Having troubles with the container or have questions?  Please
 
 For other great Dockerized applications, see https://jlesage.github.io/docker-apps.
 
-[create a new issue]: https://github.com/jlesage/docker-{{ defs.app.name }}/issues
+[create a new issue]: https://github.com/jlesage/docker-{{ app.name }}/issues

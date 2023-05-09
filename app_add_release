@@ -3,12 +3,10 @@
 SCRIPTDIR="$(readlink -f "$(dirname "$0")")"
 
 usage() {
-    echo "usage: $(basename "$0") APPXML VERSION_INCREASE CHANGE [CHANGE...]
+    echo "usage: $(basename "$0") APPYML CHANGE [CHANGE...]
 
 Arguments:
-    APPXML                     Path to the application's definitions XML file.
-    VERSION_INCREASE           Version part to increase.  Possible values are:
-                               major, minor, patch.
+    APPYML                     Path to the application's definitions YAML file.
     CHANGE                     Change to be added in the changelog.  Prepend
                                with 'XX:' to set the level.
 "
@@ -34,22 +32,17 @@ promptyn() {
     echo "$answer" | grep -iq "^y"
 }
 
-APPXML="$1"
-VINCR="$2"
+APPYML="$1"
 
 # Validate arguments.
-[ -n "$APPXML" ] || die_usage "Application's definitions XML file is missing."
-[ -f "$APPXML" ] || die_usage "File not found: '$APPXML'"
-[ -n "$VINCR" ] || die_usage "Version part to increase is missing."
-if [ "$VINCR" != "major" ] && [ "$VINCR" != "minor" ] && [ "$VINCR" != "patch" ]; then
-    die "Invalid version part: '$VINCR'"
-fi
-[ -n "$3" ] || die_usage "At least one change is needed."
+[ -n "$APPYML" ] || die_usage "Application's definitions YAML file is missing."
+[ -f "$APPYML" ] || die_usage "File not found: '$APPYML'"
+[ -n "$2" ] || die_usage "At least one change is needed."
 
-shift 2
+shift 1
 
-APPDIR="$(readlink -f "$(dirname "$APPXML")")"
-APPFILE="$(basename "$APPXML")"
+APPDIR="$(readlink -f "$(dirname "$APPYML")")"
+APPFILE="$(basename "$APPYML")"
 
 # Make sure the definitions file is not already modified.
 if [ -d "$APPDIR"/.git ] && [ -n "$(git -C "$APPDIR" diff "$APPFILE")" ]; then
@@ -57,60 +50,56 @@ if [ -d "$APPDIR"/.git ] && [ -n "$(git -C "$APPDIR" diff "$APPFILE")" ]; then
 fi
 
 # Get current version.
-CUR_VERSION="$(cat "$APPDIR"/"$APPFILE" | sed -n 's|.*<version>\([0-9.]\+\)</version>|\1|p' | head -n 1)"
+CUR_VERSION="$(cat "$APPDIR"/"$APPFILE" | sed -n 's|.*- version: \([0-9.]\+\)$|\1|p' | head -n 1)"
+CUR_VERSION_YY_MM="$(echo "$CUR_VERSION" | cut -d'.' -f1-2)"
+CUR_VERSION_SEQ="$(echo "$CUR_VERSION" | cut -d'.' -f3)"
 
-# Increase the version.
-VERSION="$CUR_VERSION"
-VERSION_MAJOR="$(echo "$VERSION" | cut -d'.' -f1)"
-VERSION_MINOR="$(echo "$VERSION" | cut -d'.' -f2)"
-VERSION_PATCH="$(echo "$VERSION" | cut -d'.' -f3)"
-case "$VINCR" in
-    major)
-        VERSION_MAJOR="$(expr $VERSION_MAJOR + 1)"
-        VERSION_MINOR=0
-        VERSION_PATCH=0
-        ;;
-    minor)
-        VERSION_MINOR="$(expr $VERSION_MINOR + 1)"
-        VERSION_PATCH=0
-        ;;
-    patch)
-        VERSION_PATCH="$(expr $VERSION_PATCH + 1)"
-        ;;
-esac
-VERSION="$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
-[ "$CUR_VERSION" != "$VERSION" ] || die "Failed to increase version."
+# Set the new version.
+VERSION_YY_MM="$(date "+%y.%m")"
+if [ "$CUR_VERSION_YY_MM" = "$VERSION_YY_MM" ]
+then
+    VERSION_SEQ="$(expr $CUR_VERSION_SEQ + 1)"
+else
+    VERSION_SEQ="1"
+fi
+VERSION="$VERSION_YY_MM.$VERSION_SEQ"
+[ "$CUR_VERSION" != "$VERSION" ] || die "Failed to generate version."
 
 echo "Current version: $CUR_VERSION"
 echo "New version:     $VERSION"
 
 # Generate the changelog.
 CHANGELOG="$(mktemp)"
-CHANGELOG_GITHUB="Changes in this release:\r\n"
-echo "      <release>" >> "$CHANGELOG"
-echo "        <version>$VERSION</version>" >> "$CHANGELOG"
-echo "        <date>$(date +%Y-%m-%d)</date>" >> "$CHANGELOG"
+CHANGELOG_GITHUB="$(mktemp)"
+echo "Changes in this release:" >> "$CHANGELOG_GITHUB"
+echo "    - version: $VERSION" >> "$CHANGELOG"
+echo "      date: $(date +%Y-%m-%d)" >> "$CHANGELOG"
+echo "      changes:" >> "$CHANGELOG"
 while [ "$#" -gt 0 ]; do
     if echo "$1" | grep -q "^[0-9]\+:"; then
         LEVEL="$(echo "$1" | cut -d':' -f1)"
         CHANGE="$(echo "$1" | cut -d':' -f2-)"
-        echo "        <change level=\"$LEVEL\">$CHANGE</change>" >> "$CHANGELOG"
-        CHANGELOG_GITHUB="$CHANGELOG_GITHUB$(printf '%0.s ' $(seq 1 $(expr 2 \* $LEVEL)))- $CHANGE\r\n"
+        echo "        - '$LEVEL:$CHANGE'" >> "$CHANGELOG"
+        echo "$(printf '%0.s ' $(seq 1 $(expr 2 \* $LEVEL)))- $(echo "$CHANGE" | sed "s/''/'/" )" >> "$CHANGELOG_GITHUB"
     else
-        echo "        <change>$1</change>" >> "$CHANGELOG"
-        CHANGELOG_GITHUB="$CHANGELOG_GITHUB  - $1\r\n"
+        echo "        - '$1'" >> "$CHANGELOG"
+        echo "  - $(echo "$1" | sed "s/''/'/" )" >> "$CHANGELOG_GITHUB"
     fi
     shift
 done
-echo "      </release>" >> "$CHANGELOG"
 #echo "Changelog:"
 #echo "#############################################"
-#cat $CHANGELOG
+#cat "$CHANGELOG"
 #echo "#############################################"
 
-# Add the release/changelog to appdefs.xml.
+echo "Changelog GitHub:"
+echo "#############################################"
+cat "$CHANGELOG_GITHUB"
+echo "#############################################"
+
+# Add the release/changelog to appdefs.yml.
 cp "$APPDIR"/"$APPFILE" "$APPFILE".bak
-sed "/<history>/ r $CHANGELOG" "$APPFILE".bak > "$APPDIR"/"$APPFILE"
+sed "/  changelog:/ r $CHANGELOG" "$APPFILE".bak > "$APPDIR"/"$APPFILE"
 diff "$APPDIR"/"$APPFILE" "$APPFILE".bak > /dev/null 2>&1
 if [ "$?" -ne 1 ]; then
     die "Failed to add the release to $APPFILE."
@@ -124,7 +113,7 @@ if [ -d "$APPDIR"/.git ]; then
     git -C "$APPDIR" --no-pager diff "$APPFILE"
     if promptyn 'Proceed'; then
         git -C "$APPDIR" add "$APPFILE" && \
-        git -C "$APPDIR" commit -m "Added changelog for version $VERSION. [skip ci]" && \
+        git -C "$APPDIR" commit -m "Added changelog for version $VERSION." && \
         git -C "$APPDIR" push origin master
         [ "$?" -eq 0 ] || die "Failed to commit changes."
     else
@@ -135,25 +124,23 @@ fi
 # Add release to github.
 if [ -d "$APPDIR"/.git ]; then
     if promptyn 'Is this a draft release'; then
-        DRAFT="true"
+        DRAFT="--draft"
     else
-        DRAFT="false"
+        DRAFT=""
     fi
 
-    JSON_DATA=$(printf '{"tag_name": "v%s","target_commitish": "master","name": "Version %s","body": "%s","draft": %s,"prerelease": false}' \
-                 "$VERSION" \
-                 "$VERSION" \
-                 "$CHANGELOG_GITHUB" \
-                 "$DRAFT"
-                 )
     echo "Adding release to GitHub..."
-    curl -# -f \
-        --data "$JSON_DATA" \
-        https://api.github.com/repos/jlesage/$(basename "$APPDIR")/releases?access_token=$(cat ~/.github_token) > /dev/null
+    gh release create \
+        v$VERSION \
+        $DRAFT \
+        --title "Version $VERSION" \
+        --notes-file "$CHANGELOG_GITHUB"
+
     [ "$?" -eq 0 ] || die "Failed to add release to GitHub."
+    rm "$CHANGELOG_GITHUB"
 fi
 
 # Update the unRAID template.
-"$SCRIPTDIR"/render_templates.sh "$APPDIR" -u
+"$SCRIPTDIR"/render_templates2.sh "$APPDIR" -u
 
 #TODO: Render templates
