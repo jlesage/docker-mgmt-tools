@@ -1,0 +1,17 @@
+#!/bin/sh
+
+die() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    exit 1
+}
+
+[ -n "$DOCKERAPPS_ROOT" ] || die "DOCKERAPPS_ROOT not defined."
+
+find "$DOCKERAPPS_ROOT" -maxdepth 1 -type d -name "docker-*" | while read DIR; do
+    [ -d "$DIR/.git" ] || continue
+    [ -f "$DIR/appdefs.yml" ] || continue
+    echo "#########################################"
+    echo "# $(basename "$DIR")"
+    echo "#########################################"
+    git -C "$DIR" "$@"
+done
