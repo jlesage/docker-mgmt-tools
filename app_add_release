@@ -141,6 +141,6 @@ if [ -d "$APPDIR"/.git ]; then
 fi
 
 # Update the unRAID template.
-"$SCRIPTDIR"/render_templates2.sh "$APPDIR" -u
+"$SCRIPTDIR"/render_templates.sh "$APPDIR" -u
 
 #TODO: Render templates
