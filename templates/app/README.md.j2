@@ -47,7 +47,7 @@ Launch the {{ app.friendly_name }} docker container with the following command:
 docker run -d \
     --name={{ app.name }} \
 {% for item in container.ports|default([]) if item.include_in_quick_start|default(false) %}
-    -p {{ item.number }}:{{ item.number }} \
+    -p {{ item.number }}:{{ item.number }}{{ '/udp' if item.protocol == 'udp' else '/tcp' if container.ports|selectattr('number', 'equalto', item.number)|list|length > 1 else '' }} \
 {% endfor %}
 {% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
     -v {{ item.host_path_example }}:{{ item.container_path }}:{{ item.permissions }} \
@@ -168,15 +168,21 @@ format: `<HOST_DIR>:<CONTAINER_DIR>[:PERMISSIONS]`.
 
 ### Ports
 
-Here is the list of ports used by the container.  They can be mapped to the host
-via the `-p` parameter (one per port mapping).  Each mapping is defined in the
-following format: `<HOST_PORT>:<CONTAINER_PORT>`.  The port number inside the
-container cannot be changed, but you are free to use any port on the host side.
+Here is the list of ports used by the container.
 
-| Port | Mapping to host | Description |
-|------|-----------------|-------------|
+When using the default bridge network, ports can be mapped to the host via the
+`-p` parameter (one per port mapping).  Each mapping is defined with the
+following format: `<HOST_PORT>:<CONTAINER_PORT>`.  The port number used inside
+the container might not be changeable, but you are free to use any port on the
+host side.
+
+See the [Docker Container Networking](https://docs.docker.com/config/containers/container-networking)
+documentation for more details.
+
+| Port | Protocol | Mapping to host | Description |
+|------|----------|-----------------|-------------|
 {% for item in container.ports|default([]) %}
-| {{ item.number }} | {{ 'Mandatory' if item.mandatory else 'Optional' }} | {{ item.description }} |
+| {{ item.number }} | {{ item.protocol.upper() }} | {{ 'Mandatory' if item.mandatory else 'Optional' }} | {{ item.description }} |
 {% endfor %}
 
 ### Changing Parameters of a Running Container
@@ -219,7 +225,7 @@ services:
     image: jlesage/{{ app.name }}
     ports:
 {% for item in container.ports|default([]) if item.include_in_quick_start|default(false) %}
-      - "{{ item.number }}:{{ item.number }}"
+      - "{{ item.number }}:{{ item.number }}{{ '/udp' if item.protocol == 'udp' else '/tcp' if container.ports|selectattr('number', 'equalto', item.number)|list|length > 1 else '' }}"
 {% endfor %}
 {% set param_name_printed = [False] %}
 {% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
