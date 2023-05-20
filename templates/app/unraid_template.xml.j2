@@ -70,7 +70,7 @@ For a complete documentation of this container, see https://github.com/jlesage/d
       {% set level = 1 %}
       {% set chgtext = chg %}
     {% endif %}
-    {% for i in range((level - 1 )* 2) %}&#x00a0;{% endfor %}- {{ chgtext }}
+    {% for i in range((level - 1 )* 2) %} {% endfor %}- {{ chgtext }}
   {% endfor %}
 
 {% endfor %}
