@@ -35,8 +35,9 @@ installation or configuration needed on the client side) or via any VNC client.
 
 ## Quick Start
 
-**NOTE**: The Docker command provided in this quick start is given as an example
-and parameters should be adjusted to your need.
+**NOTE**:
+    The Docker command provided in this quick start is given as an example
+    and parameters should be adjusted to your need.
 
 Launch the {{ app.friendly_name }} docker container with the following command:
 ```shell
@@ -58,6 +59,7 @@ docker run -d \
 ```
 
 Where:
+
 {% for item in container.volumes|default([]) if item.include_in_quick_start|default(false) and not item.container_path in container.unsupported_volume|default([])%}
   - `{{ item.host_path_example }}`: {{ item.description }}
 {% endfor %}
