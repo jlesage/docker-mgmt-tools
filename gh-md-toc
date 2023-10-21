@@ -23,7 +23,7 @@
 #       substr($0, match($0, "href=\"[^\"]+?\" ")+6, RLENGTH-8)
 #
 
-gh_toc_version="0.8.0"
+gh_toc_version="0.9.0"
 
 gh_user_agent="gh-md-toc v$gh_toc_version"
 
@@ -69,7 +69,7 @@ gh_toc_md2html() {
 
     local gh_tmp_file_md=$gh_file_md
     if [ "$skip_header" = "yes" ]; then
-        if grep -Fxq "<!--te-->" $gh_src; then
+        if grep -Fxq "<!--te-->" "$gh_src"; then
           # cut everything before the toc
           gh_tmp_file_md=$gh_file_md~~
           sed '1,/<!--te-->/d' $gh_file_md > $gh_tmp_file_md
@@ -168,7 +168,7 @@ gh_toc(){
         local toc=`echo "$rawhtml" | gh_toc_grab "$gh_src_copy" "$indent"`
         echo "$toc"
         if [ "$need_replace" = "yes" ]; then
-            if grep -Fxq "<!--ts-->" $gh_src && grep -Fxq "<!--te-->" $gh_src; then
+            if grep -Fxq "<!--ts-->" "$gh_src" && grep -Fxq "<!--te-->" "$gh_src"; then
                 echo "Found markers"
             else
                 echo "You don't have <!--ts--> or <!--te--> in your file...exiting"
@@ -198,7 +198,7 @@ gh_toc(){
             fi
             echo
             if [ "${no_backup}" = "yes" ]; then
-                rm ${toc_path} ${gh_src}${ext}
+                rm "$toc_path" "$gh_src$ext"
             fi
             echo "!! TOC was added into: '$gh_src'"
             if [ -z "${no_backup}" ]; then
@@ -218,6 +218,11 @@ gh_toc(){
 # $2 - number of spaces used to indent.
 #
 gh_toc_grab() {
+
+    href_regex="/href=\"[^\"]+?\"/"
+    lefttext_regex="/(<a class=\"heading-link\".*?>)(.*)(<span aria-hidden)/"
+    righttext_regex="/>.*/"
+
     common_awk_script='
                      modified_href = ""
                      split(href, chars, "")
@@ -241,22 +246,23 @@ gh_toc_grab() {
         grepcmd="pcregrep -o"
         echoargs=""
         awkscript='{
-                     level = substr($0, length($0), 1)
-                     text = substr($0, match($0, /a>.*<\/h/)+2, RLENGTH-5)
-                     href = substr($0, match($0, "href=\"([^\"]+)?\"")+6, RLENGTH-7)
+                     level = substr($0, 3, 1)
+                     lefttext = substr($0, match($0, '$lefttext_regex')+1, RLENGTH-18)
+                     text = substr(lefttext, match(lefttext, '$righttext_regex')+1)
+                     href = substr($0, match($0, '$href_regex')+6, RLENGTH-7)
                      '"$common_awk_script"'
                 }'
     else
         grepcmd="grep -Eo"
         echoargs="-e"
         awkscript='{
-                     level = substr($0, length($0), 1)
-                     text = substr($0, match($0, /a>.*<\/h/)+2, RLENGTH-5)
-                     href = substr($0, match($0, "href=\"[^\"]+?\"")+6, RLENGTH-7)
+                     level = substr($0, 3, 1)
+                     lefttext = substr($0, match($0, '$lefttext_regex')+1, RLENGTH-18)
+                     text = substr(lefttext, match(lefttext, '$righttext_regex')+1)
+                     href = substr($0, match($0, '$href_regex')+6, RLENGTH-7)
                      '"$common_awk_script"'
                 }'
     fi
-    href_regex='href=\"[^\"]+?\"'
 
     # if closed <h[1-6]> is on the new line, then move it on the prev line
     # for example:
@@ -265,8 +271,11 @@ gh_toc_grab() {
     #   became: The command <code>foo1</code></h1>
     sed -e ':a' -e 'N' -e '$!ba' -e 's/\n<\/h/<\/h/g' |
 
+    # Sometimes a line can start with <span>. Fix that.
+    sed -e ':a' -e 'N' -e '$!ba' -e 's/\n<span/<span/g' |
+
     # find strings that corresponds to template
-    $grepcmd '<a.*id="user-content-[^"]*".*</h[1-6]' |
+    $grepcmd '<h.*id="user-content-[^"]*".*</h[1-6]' |
 
     # remove code tags
     sed 's/<code>//g' | sed 's/<\/code>//g' |
@@ -275,7 +284,7 @@ gh_toc_grab() {
     sed 's/<g-emoji[^>]*[^<]*<\/g-emoji> //g' |
 
     # now all rows are like:
-    #   <a id="user-content-..." href="..."><span ...></span></a> ... </h1
+    #   <h1 id="user-content-..."><a href="..."> ... <span ...></span></a></h1
     # format result line
     #   * $0 - whole string
     #   * last element of each row: "</hN" where N in (1,2,3,...)
