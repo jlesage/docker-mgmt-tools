@@ -78,11 +78,11 @@ echo "      changes:" >> "$CHANGELOG"
 while [ "$#" -gt 0 ]; do
     if echo "$1" | grep -q "^[0-9]\+:"; then
         LEVEL="$(echo "$1" | cut -d':' -f1)"
-        CHANGE="$(echo "$1" | cut -d':' -f2-)"
+        CHANGE="$(echo "$1" | cut -d':' -f2- | sed -E "s/([^'])'([^'])/\1''\2/g")"
         echo "        - '$LEVEL:$CHANGE'" >> "$CHANGELOG"
         echo "$(printf '%0.s ' $(seq 1 $(expr 2 \* $LEVEL)))- $(echo "$CHANGE" | sed "s/''/'/" )" >> "$CHANGELOG_GITHUB"
     else
-        echo "        - '$1'" >> "$CHANGELOG"
+        echo "        - '$(echo $1 | sed -E "s/([^'])'([^'])/\1''\2/g")'" >> "$CHANGELOG"
         echo "  - $(echo "$1" | sed "s/''/'/" )" >> "$CHANGELOG_GITHUB"
     fi
     shift
