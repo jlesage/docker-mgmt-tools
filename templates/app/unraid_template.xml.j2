@@ -5,8 +5,14 @@
   <Registry>https://hub.docker.com/r/jlesage/{{ app.name }}/</Registry>
   <Network>bridge</Network>
   <Privileged>false</Privileged>
+{% if app.unraid.support_url is defined %}
   <Support>{{ app.unraid.support_url }}</Support>
+{% else %}
+  <Support>https://github.com/jlesage/docker-{{ app.name }}/issues/new/choose</Support>
+{% endif %}
   <ReadMe>https://github.com/jlesage/docker-{{ app.name }}#readme</ReadMe>
+  <GitHub>https://github.com/jlesage/docker-{{ app.name }}</GitHub>
+  <Registry>https://hub.docker.com/r/jlesage/{{ app.name }}</Registry>
   <Overview>
 {{ app.project.description|replace('\n', ' ') }}
 
@@ -58,7 +64,7 @@ For a complete documentation of this container, see https://github.com/jlesage/d
   </Description>
   <Beta>False</Beta>
   <Project>{{ app.project.url }}</Project>
-  <Date>{{ app.changelog[0].date.strftime('%Y-%m-%d') }}</Date>
+  <Date>{% if app.changelog[0] is defined %}{{ app.changelog[0].date.strftime('%Y-%m-%d') }}{% endif %}</Date>
   <Changes>
 {% for item in app.changelog|default([]) %}
 ###v{{ item.version }} ({{ item.date.strftime('%Y-%m-%d') }})
