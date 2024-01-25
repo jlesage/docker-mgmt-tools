@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <Container version="2">
+{% if app.unraid.name is defined %}
+  <Name>{{ app.unraid.name|replace(' ', '') }}</Name>
+{% else %}
   <Name>{{ app.friendly_name|replace(' ', '') }}</Name>
+{% endif %}
   <Repository>jlesage/{{ app.name }}</Repository>
   <Registry>https://hub.docker.com/r/jlesage/{{ app.name }}/</Registry>
   <Network>bridge</Network>
