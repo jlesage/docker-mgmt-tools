@@ -1,4 +1,5 @@
-# Docker container for {{ app.friendly_name }}
+# Docker container for {%if app.title_name is defined %}{{ app.title_name }}{% else %}{{ app.friendly_name }}{% endif %}
+
 [![Release](https://img.shields.io/github/release/jlesage/docker-{{ app.name }}.svg?logo=github&style=for-the-badge)](https://github.com/jlesage/docker-{{ app.name }}/releases/latest)
 [![Docker Image Size](https://img.shields.io/docker/image-size/jlesage/{{ app.name }}/latest?logo=docker&style=for-the-badge)](https://hub.docker.com/r/jlesage/{{ app.name }}/tags)
 [![Docker Pulls](https://img.shields.io/docker/pulls/jlesage/{{ app.name }}?label=Pulls&logo=docker&style=for-the-badge)](https://hub.docker.com/r/jlesage/{{ app.name }})
