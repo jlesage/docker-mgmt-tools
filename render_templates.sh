@@ -13,12 +13,13 @@ FORCE_LIST="environment_variable,volume,port,change,link,section,release,overvie
 usage() {
     echo "usage: $(basename $0) [OPTIONS...] WORKPATH
 
-Generate the README.md and unRAID template of one or multiple Docker containers.
+Generate files related to one or multiple Docker containers.
 
 Arguments:
   WORKPATH         Working path.  See notes below.
 
 Options:
+  -b               Keep backup of modified file(s).
   -r               Only generate README.md.
   -d               Only generate DOCKERHUB.md.
   -u               Only generate unRAID template.
@@ -36,6 +37,7 @@ WORKPATH can be:
 "
 }
 
+DO_BACKUP=false
 DEBUG=0
 WORKDIR="$(mktemp -d)"
 
@@ -116,8 +118,10 @@ generate() {
 
     OUTPUT_BACKUP="$OUTPUT-$(date +%Y-%m-%d-%H-%M-%S)"
 
-    if [ -f "$OUTPUT" ]; then
-        cp "$OUTPUT" "$OUTPUT_BACKUP"
+    if $DO_BACKUP; then
+        if [ -f "$OUTPUT" ]; then
+            cp "$OUTPUT" "$OUTPUT_BACKUP"
+        fi
     fi
 
     echo "Generating $OUTPUT..."
@@ -128,9 +132,11 @@ generate() {
 #    j2 --customize "$SCRIPT_DIR"/j2-customize.py "$TEMPLATE" "$DATA" > "$OUTPUT"
 
     # Remove the backup if generated file is the same.
-    if [ -f "$OUTPUT_BACKUP" ]; then
-        if diff "$OUTPUT" "$OUTPUT_BACKUP" > /dev/null; then
-            rm "$OUTPUT_BACKUP"
+    if $DO_BACKUP; then
+        if [ -f "$OUTPUT_BACKUP" ]; then
+            if diff "$OUTPUT" "$OUTPUT_BACKUP" > /dev/null; then
+                rm "$OUTPUT_BACKUP"
+            fi
         fi
     fi
 }
@@ -280,6 +286,7 @@ while [ "$#" -ne 0 ]
 do
     case "$1" in
         --debug) DEBUG=1 ;;
+        -b) DO_BACKUP=true ;;
         -r) ASSET_TO_GENERATE=readme ;;
         -d) ASSET_TO_GENERATE=dockerhub_readme ;;
         -u) ASSET_TO_GENERATE=unraid_template ;;
