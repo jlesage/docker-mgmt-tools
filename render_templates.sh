@@ -77,7 +77,7 @@ get_app_data_sources() {
             "$SCRIPT_DIR/../docker-baseimage-gui/baseimagedefs.yml" \
             "https://raw.githubusercontent.com/jlesage/docker-baseimage-gui/master/baseimagedefs.yml" \
             "$WORKDIR"/data-base-gui.yml
-        yaml-merge "$WORKDIR"/data-base-gui.yml "$DATA_SOURCE" > "$WORKDIR"/data.yml
+        "$YAML_MERGE" "$WORKDIR"/data-base-gui.yml "$DATA_SOURCE" > "$WORKDIR"/data.yml
         #merge-yaml -i "$WORKDIR"/data-base-gui.yml "$DATA_SOURCE" -o "$WORKDIR"/data.yml > /dev/null
     else
         cp "$DATA_SOURCE" "$WORKDIR"/data.yml
@@ -88,7 +88,7 @@ get_app_data_sources() {
         "$SCRIPT_DIR/../docker-baseimage-multiarch/baseimagedefs.yml" \
         "https://raw.githubusercontent.com/jlesage/docker-baseimage/master/baseimagedefs.yml" \
         "$WORKDIR"/data-base.yml
-    yaml-merge "$WORKDIR"/data-base.yml "$WORKDIR"/data.yml > "$WORKDIR"/data-final.yml
+    "$YAML_MERGE" "$WORKDIR"/data-base.yml "$WORKDIR"/data.yml > "$WORKDIR"/data-final.yml
     #merge-yaml -i "$WORKDIR"/data-base.yml "$WORKDIR"/data.yml -o "$WORKDIR"/data-final.yml
 
     echo "$WORKDIR"/data-final.yml
@@ -102,7 +102,7 @@ get_baseimage_data_sources() {
             "$SCRIPT_DIR/../docker-baseimage-multiarch/baseimagedefs.yml" \
             "https://raw.githubusercontent.com/jlesage/docker-baseimage/master/baseimagedefs.yml" \
             "$WORKDIR"/data-base.yml
-        yaml-merge "$WORKDIR"/data-base.yml "$DATA_SOURCE" > "$WORKDIR"/data.yml
+        "$YAML_MERGE" "$WORKDIR"/data-base.yml "$DATA_SOURCE" > "$WORKDIR"/data.yml
         #merge-yaml -i "$WORKDIR"/data-base.yml "$DATA_SOURCE" -o "$WORKDIR"/data.yml > /dev/null
     else
         cp "$DATA_SOURCE" "$WORKDIR"/data.yml
@@ -316,6 +316,10 @@ done
 if [ -z "$WORKPATH" ]; then
     die "Workpath not set."
 fi
+
+YAML_MERGE="$SCRIPT_DIR"/yaml-merge/yaml-merge
+[ -e "$YAML_MERGE" ] || die "yaml-merge not found"
+[ -n "$(which j2)" ] || die "j2 not found"
 
 # Handle the provided WORKPATH.
 if [ -f "$WORKPATH" ]; then
