@@ -1,7 +1,10 @@
 #!/bin/sh
 
 usage() {
-    echo "usage: $(basename "$0") APPYML VERSION
+    echo "usage: $(basename "$0") [OPTIONS...] APPYML VERSION
+
+Options:
+    --no-commit                Do not commit change.
 
 Arguments:
     APPYML                     Path to the application's definitions YML file.
@@ -29,8 +32,34 @@ promptyn() {
     echo "$answer" | grep -iq "^y"
 }
 
-APPYML="$1"
-VERSION="$2"
+APPYML=
+VERSION=
+DO_COMMIT=true
+
+# Parse arguments.
+while [ $# -ne 0 ]
+do
+    case "$1" in
+        --no-commit)
+            DO_COMMIT=false
+            ;;
+        -h|--help)
+            die_usage
+            ;;
+        -*)
+            die_usage "Unknown option: $1"
+            ;;
+        *)
+            if [ -z "$APPYML" ]; then
+                APPYML="$1"
+            elif [ -z "$VERSION" ]; then
+                VERSION="$1"
+            else
+                die_usage "Unknown argument: $1"
+            fi
+    esac
+    shift
+done
 
 # Validate arguments.
 [ -n "$APPYML" ] || die_usage "Application's definitions YML file is missing."
@@ -55,7 +84,7 @@ fi
 rm "$APPDIR"/Dockerfile.bak
 
 # Commit changes.
-if [ -d "$APPDIR"/.git ]; then
+if $DO_COMMIT && [ -d "$APPDIR"/.git ]; then
     echo "The following changes will be applied:"
     git -C "$APPDIR" --no-pager diff Dockerfile
     if promptyn 'Proceed'; then
