@@ -49,6 +49,10 @@ if [ -d "$APPDIR"/.git ] && [ -n "$(git -C "$APPDIR" diff "$APPFILE")" ]; then
     die "$APPFILE already contains modifications."
 fi
 
+# Get application name.
+APPNAME="$(cat "$APPDIR"/"$APPFILE" | sed -n 's|^[ ]*name: \([a-zA-Z0-9_\-]\+\)$|\1|p' | head -n 1)"
+APPFRIENDLYNAME="$(cat "$APPDIR"/"$APPFILE" | sed -n 's|^[ ]*friendly_name: \([ a-zA-Z0-9_\-]\+\)$|\1|p' | head -n 1)"
+
 # Get current version.
 CUR_VERSION="$(cat "$APPDIR"/"$APPFILE" | sed -n 's|.*- version: \([0-9.]\+\)$|\1|p' | head -n 1)"
 CUR_VERSION_YY_MM="$(echo "$CUR_VERSION" | cut -d'.' -f1-2)"
@@ -142,5 +146,36 @@ fi
 
 # Update the unRAID template.
 "$SCRIPTDIR"/render_templates.sh "$APPDIR" -u
+if [ $? -eq 0 ]; then
+    # Commit unRAID template.
+
+    TEMPLATE_DIR="$(readlink -f "$APPDIR"/../docker-templates)"
+    TEMPLATE_FILE=jlesage/"$APPNAME".xml
+
+    [ -d "$TEMPLATE_DIR" ] || die "Directory not found: $TEMPLATE_DIR"
+    [ -f "$TEMPLATE_DIR"/"$TEMPLATE_FILE" ] || die "File not found: $TEMPLATE_DIR/$TEMPLATE_FILE"
+
+    # Make sure the template file is modified.
+    if [ -z "$(git -C "$TEMPLATE_DIR" --no-pager diff "$TEMPLATE_FILE")" ]; then
+        die "$TEMPLATE_FILE contains no modifications."
+    fi
+
+    # Make sure there is no pending changes.
+    if [ -n "$(git -C "$TEMPLATE_DIR" diff --cached)" ]; then
+        die "$TEMPLATE_DIR contains pending changes."
+    fi
+
+    echo "The following unRAID template changes will be commited:"
+    git -C "$TEMPLATE_DIR" --no-pager diff "$TEMPLATE_FILE"
+    if promptyn 'Proceed'; then
+        git -C "$TEMPLATE_DIR" add "$TEMPLATE_FILE" && \
+        git -C "$TEMPLATE_DIR" commit -m "Updated changelog of $APPFRIENDLYNAME." && \
+        [ "$?" -eq 0 ] || die "Failed to commit changes."
+    else
+        exit 1
+    fi
+else
+    die "Failed to update unRAID template."
+fi
 
 #TODO: Render templates
