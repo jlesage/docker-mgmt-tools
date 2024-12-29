@@ -185,6 +185,7 @@ generate_app_github_issue_templates() {
     [ -f "$SCRIPT_DIR/templates/app/github_issue_config.yml.j2" ] || die "GitHub issue templates: File not found: $SCRIPT_DIR/templates/app/github_issue_config.yml.j2"
     [ -f "$SCRIPT_DIR/templates/app/github_issue_bug_report.yml.j2" ] || die "GitHub issue templates: File not found: $SCRIPT_DIR/templates/app/github_issue_bug_report.yml.j2"
     [ -f "$SCRIPT_DIR/templates/app/github_issue_feature_request.yml.j2" ] || die "GitHub issue templates: File not found: $SCRIPT_DIR/templates/app/github_issue_feature_request.yml.j2"
+    [ -f "$SCRIPT_DIR/templates/app/FUNDING.yml.j2" ] || die "GitHub issue templates: File not found: $SCRIPT_DIR/templates/app/FUNDING.yml.j2"
 
     mkdir -p "$(dirname "$DEF_FILE")/.github/ISSUE_TEMPLATE"
 
@@ -196,6 +197,9 @@ generate_app_github_issue_templates() {
 
     OUTPUT="$(dirname "$DEF_FILE")/.github/ISSUE_TEMPLATE/feature-request.yml"
     generate "$SCRIPT_DIR"/templates/app/github_issue_feature_request.yml.j2 "$DATA_SOURCE" "$OUTPUT"
+
+    OUTPUT="$(dirname "$DEF_FILE")/.github/FUNDING.yml"
+    generate "$SCRIPT_DIR"/templates/app/FUNDING.yml.j2 "$DATA_SOURCE" "$OUTPUT"
 }
 
 generate_app_all() {
