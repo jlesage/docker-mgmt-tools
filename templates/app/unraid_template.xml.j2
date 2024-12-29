@@ -19,17 +19,19 @@
   <Registry>https://hub.docker.com/r/jlesage/{{ app.name }}</Registry>
   <Overview>
 {{ app.project.description|replace('\n', ' ') }}
-
 {% if app.gui_type.lower() == 'x11' %}
-The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
-{%- endif %}
 
+The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
+
+Also, being based on Alpine Linux, size of this container is very small.
+{% else %}
+
+Being based on Alpine Linux, size of this container is very small.
+{% endif %}
 {% if app.documentation.overview is defined %}
 
 {{ app.documentation.overview|replace('\n', ' ') }}
 {% endif %}
-
-Also, being based on Alpine Linux, size of this container is very small.
 
 For a complete documentation of this container, see https://github.com/jlesage/docker-{{ app.name }}#readme
 {% if app.unraid.extra_description is defined %}
@@ -48,17 +50,19 @@ For a complete documentation of this container, see https://github.com/jlesage/d
 {% endif %}
   <Description>
 {{ app.project.description|replace('\n', ' ') }}
-
 {% if app.gui_type.lower() == 'x11' %}
-The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
-{%- endif %}
 
+The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
+
+Also, being based on Alpine Linux, size of this container is very small.
+{% else %}
+
+Being based on Alpine Linux, size of this container is very small.
+{% endif %}
 {% if app.documentation.overview is defined %}
 
 {{ app.documentation.overview|replace('\n', ' ') }}
 {% endif %}
-
-Also, being based on Alpine Linux, size of this container is very small.
 
 For a complete documentation of this container, see https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md.
 {% if app.unraid.extra_description is defined %}
