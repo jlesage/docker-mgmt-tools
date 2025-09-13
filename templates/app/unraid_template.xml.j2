@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <Container version="2">
 {% if app.unraid.name is defined %}
-  <Name>{{ app.unraid.name|replace(' ', '') }}</Name>
+  <Name>{{ app.unraid.name|replace(' ', '')|replace(':', '') }}</Name>
 {% else %}
-  <Name>{{ app.friendly_name|replace(' ', '') }}</Name>
+  <Name>{{ app.friendly_name|replace(' ', '')|replace(':', '') }}</Name>
 {% endif %}
   <Repository>jlesage/{{ app.name }}</Repository>
   <Registry>https://hub.docker.com/r/jlesage/{{ app.name }}/</Registry>
@@ -21,12 +21,12 @@
 {{ app.project.description|replace('\n', ' ') }}
 {% if app.gui_type.lower() == 'x11' %}
 
-The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
+The graphical user interface (GUI) of the application can be accessed through a modern web browser, requiring no installation or configuration on the client side, or via any VNC client.
 
-Also, being based on Alpine Linux, size of this container is very small.
+The container is built against Alpine Linux to provide an efficient image in terms of size and resource usage.
 {% else %}
 
-Being based on Alpine Linux, size of this container is very small.
+The container is built against Alpine Linux to provide an efficient image in terms of size and resource usage.
 {% endif %}
 {% if app.documentation.overview is defined %}
 
@@ -52,19 +52,19 @@ For a complete documentation of this container, see https://github.com/jlesage/d
 {{ app.project.description|replace('\n', ' ') }}
 {% if app.gui_type.lower() == 'x11' %}
 
-The GUI of the application is accessed through a modern web browser (no installation or configuration needed on the client side) or via any VNC client.
+The graphical user interface (GUI) of the application can be accessed through a modern web browser, requiring no installation or configuration on the client side, or via any VNC client.
 
-Also, being based on Alpine Linux, size of this container is very small.
+The container is built against Alpine Linux to provide an efficient image in terms of size and resource usage.
 {% else %}
 
-Being based on Alpine Linux, size of this container is very small.
+The container is built against Alpine Linux to provide an efficient image in terms of size and resource usage.
 {% endif %}
 {% if app.documentation.overview is defined %}
 
 {{ app.documentation.overview|replace('\n', ' ') }}
 {% endif %}
 
-For a complete documentation of this container, see https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md.
+For a complete documentation, visit https://github.com/jlesage/docker-{{ app.name }}/blob/master/README.md.
 {% if app.unraid.extra_description is defined %}
 
 {{ app.unraid.extra_description }}
@@ -139,6 +139,6 @@ For a complete documentation of this container, see https://github.com/jlesage/d
 {% endfor %}
   <!-- Port Mappings -->
 {% for item in container.ports|default([]) if item.unraid_template is defined %}
-  <Config Name="{{ item.unraid_template.title }}" Target="{{ item.number }}" Default="{{ item.unraid_template.default|default(item.number, true) }}" Mode="{{ item.protocol }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('"', '&quot;') }}  NOTE: This setting is relevant only when the Network Type is set to &quot;Bridge&quot;." Type="Port" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
+  <Config Name="{{ item.unraid_template.title }}" Target="{{ item.number }}" Default="{{ item.unraid_template.default|default(item.number, true) }}" Mode="{{ item.protocol }}" Description="{{ item.unraid_template.description|default(item.description, true)|replace('"', '&quot;') }} NOTE: This setting is relevant only when the Network Type is set to &quot;Bridge&quot;." Type="Port" Display="{{ item.unraid_template.display }}" Required="{{ item.unraid_template.required }}" Mask="{{ item.unraid_template.mask }}"/>
 {% endfor %}
 </Container>

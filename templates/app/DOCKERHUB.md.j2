@@ -11,8 +11,8 @@
 This is a Docker container for [{{ app.friendly_name }}]({{ app.project.url }}).
 
 {% if app.gui_type.lower() == 'x11' %}
-The GUI of the application is accessed through a modern web browser (no
-installation or configuration needed on the client side) or via any VNC client.
+The graphical user interface (GUI) of the application can be accessed through a
+modern web browser, requiring no installation or configuration on the client
 {%- endif %}
 
 {% if app.documentation.overview is defined %}
@@ -37,8 +37,8 @@ installation or configuration needed on the client side) or via any VNC client.
 ## Quick Start
 
 **NOTE**:
-    The Docker command provided in this quick start is given as an example
-    and parameters should be adjusted to your need.
+    The Docker command provided in this quick start is an example, and parameters
+    should be adjusted to suit your needs.
 
 Launch the {{ app.friendly_name }} docker container with the following command:
 ```shell
@@ -69,9 +69,9 @@ Where:
 {% endfor %}
 
 {% if app.gui_type.lower() == 'web' %}
-Browse to `http://your-host-ip:{{ app.gui_port }}` to access the {{ app.friendly_name }} web interface.
+Access the {{ app.friendly_name }} GUI by browsing to `http://your-host-ip:{{ app.gui_port }}`.
 {% elif app.gui_type.lower() == 'x11' %}
-Browse to `http://your-host-ip:5800` to access the {{ app.friendly_name }} GUI.
+Access the {{ app.friendly_name }} GUI by browsing to `http://your-host-ip:5800`.
 {% endif %}
 {% if '/storage' not in container.unsupported_volume|default([]) %}
 Files from the host appear under the `/storage` folder in the container.
@@ -83,9 +83,7 @@ Full documentation is available at https://github.com/jlesage/docker-{{ app.name
 
 ## Support or Contact
 
-Having troubles with the container or have questions?  Please
-[create a new issue].
+Having troubles with the container or have questions? Please
+[create a new issue](https://github.com/jlesage/docker-{{ app.name }}/issues).
 
-For other great Dockerized applications, see https://jlesage.github.io/docker-apps.
-
-[create a new issue]: https://github.com/jlesage/docker-{{ app.name }}/issues
+For other Dockerized applications, visit https://jlesage.github.io/docker-apps.
