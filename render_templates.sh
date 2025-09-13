@@ -24,6 +24,7 @@ Options:
   -d               Only generate DOCKERHUB.md.
   -u               Only generate unRAID template.
   -g               Only generate GitHub issue templates.
+  -l               Only generate LICENSE.
 
 The data source for templates are stored in:
   - appdefs.yml for Docker containers running an application.
@@ -202,6 +203,16 @@ generate_app_github_issue_templates() {
     generate "$SCRIPT_DIR"/templates/app/FUNDING.yml.j2 "$DATA_SOURCE" "$OUTPUT"
 }
 
+generate_app_license() {
+    DEF_FILE="$(realpath "$1" 2> /dev/null)"
+    DATA_SOURCE="$(get_app_data_sources "$(realpath "$1" 2> /dev/null)")"
+
+    [ -f "$SCRIPT_DIR/templates/app/LICENSE.j2" ] || die "LICENSE template: File not found: $SCRIPT_DIR/templates/app/LICENSE.j2"
+
+    OUTPUT="$(dirname "$DEF_FILE")/LICENSE"
+    generate "$SCRIPT_DIR"/templates/app/LICENSE.j2 "$DATA_SOURCE" "$OUTPUT"
+}
+
 generate_app_all() {
     case "$2" in
         all)
@@ -209,6 +220,7 @@ generate_app_all() {
             generate_app_dockerhub_readme "$1"
             generate_app_unraid_template "$1"
             generate_app_github_issue_templates "$1"
+            generate_app_license "$1"
             ;;
         readme)
             generate_app_readme "$1"
@@ -221,6 +233,9 @@ generate_app_all() {
             ;;
         github_issue_templates)
             generate_app_github_issue_templates "$1"
+            ;;
+        license)
+            generate_app_license "$1"
             ;;
     esac
 }
@@ -265,6 +280,8 @@ generate_baseimage_all() {
             ;;
         github_issue_templates)
             ;;
+        license)
+            ;;
         *)
             die "Unexpected argument '$2'."
             ;;
@@ -295,6 +312,7 @@ do
         -d) ASSET_TO_GENERATE=dockerhub_readme ;;
         -u) ASSET_TO_GENERATE=unraid_template ;;
         -g) ASSET_TO_GENERATE=github_issue_templates ;;
+        -l) ASSET_TO_GENERATE=license ;;
         -h)
             usage
             exit 1
