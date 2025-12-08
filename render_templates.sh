@@ -152,7 +152,9 @@ generate_app_readme() {
     generate "$SCRIPT_DIR"/templates/app/README.md.j2 "$DATA_SOURCE" "$OUTPUT"
 
     # Add the TOC.
-    "$SCRIPT_DIR"/gh-md-toc --no-backup --hide-footer --skip-header "$OUTPUT" > /dev/null
+    "$SCRIPT_DIR"/gh-md-toc --no-backup --hide-footer --skip-header "$OUTPUT" > /dev/null || {
+        die "README.md template: Failed to generate table of content."
+    }
     sed -i "/<!--t[se]-->/d" "$OUTPUT"
 }
 
