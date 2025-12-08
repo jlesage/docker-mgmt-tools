@@ -76,7 +76,7 @@ if grep -q "^FROM jlesage/baseimage.*-v$VERSION\$" "$APPDIR"/Dockerfile; then
 fi
 
 # Modify baseimage version in Dockerfile.
-sed -i.bak "s|\(^FROM jlesage/baseimage.*-v\)\([0-9]\.[0-9]\.[0-9]\)$|\1$VERSION|" "$APPDIR"/Dockerfile
+sed -i.bak "s|\(^FROM jlesage/baseimage.*-v\)\([0-9]\+\.[0-9]\+\.[0-9]\+\)$|\1$VERSION|" "$APPDIR"/Dockerfile
 diff "$APPDIR"/Dockerfile "$APPDIR"/Dockerfile.bak > /dev/null
 if [ "$?" -ne 1 ]; then
     die "Failed to set baseimage to version '$VERSION'."
