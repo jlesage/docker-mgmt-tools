@@ -9,12 +9,11 @@
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg?style=for-the-badge)](https://paypal.me/JocelynLeSage)
 
 This is a Docker container for [{{ app.friendly_name }}]({{ app.project.url }}).
-
 {% if app.gui_type.lower() == 'x11' %}
+
 The graphical user interface (GUI) of the application can be accessed through a
 modern web browser, requiring no installation or configuration on the client
-{%- endif %}
-
+{% endif %}
 {% if app.documentation.overview is defined %}
 
 {{ app.documentation.overview }}
@@ -25,6 +24,8 @@ modern web browser, requiring no installation or configuration on the client
 > {{ item }}
 {% endfor %}
 {% endif %}
+
+> This Docker container is entirely unofficial and not made by the creators of {{ app.friendly_name }}.
 
 ---
 

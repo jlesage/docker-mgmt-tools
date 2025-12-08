@@ -23,6 +23,7 @@ This baseimage is available for multiple Linux distributions:
 | [Alpine 3.20]      | alpine-3.20-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.20-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
 | [Alpine 3.21]      | alpine-3.21-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.21-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
 | [Alpine 3.22]      | alpine-3.22-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.22-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
+| [Alpine 3.23]      | alpine-3.23-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.23-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
 | [Debian 11]        | debian-11-vX.Y.Z      | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/debian-11-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)    |
 | [Debian 12]        | debian-12-vX.Y.Z      | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/debian-12-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)    |
 | [Ubuntu 16.04 LTS] | ubuntu-16.04-vX.Y.Z   | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/ubuntu-16.04-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#) |
@@ -49,6 +50,7 @@ details.
 [Alpine 3.20]: https://alpinelinux.org/posts/Alpine-3.20.0-released.html
 [Alpine 3.21]: https://alpinelinux.org/posts/Alpine-3.21.0-released.html
 [Alpine 3.22]: https://alpinelinux.org/posts/Alpine-3.22.0-released.html
+[Alpine 3.23]: https://alpinelinux.org/posts/Alpine-3.23.0-released.html
 [Debian 11]: https://www.debian.org/releases/bullseye/
 [Debian 12]: https://www.debian.org/releases/bookworm/
 [Ubuntu 16.04 LTS]: http://releases.ubuntu.com/16.04/
@@ -481,7 +483,7 @@ Use the `add-pkg` and `del-pkg` helpers to add or remove packages, ensuring
 proper cleanup to minimize container size.
 
 These tools allow temporary installation of a group of packages (virtual
-package)  using the `--virtual NAME` parameter, enabling later removal with
+package) using the `--virtual NAME` parameter, enabling later removal with
 `del-pkg NAME`. Pre-installed packages are ignored and not removed.
 
 Example in a `Dockerfile` for compiling a project:
@@ -689,12 +691,11 @@ The baseimage includes a log monitor that sends notifications when specific
 messages are detected in log or status files.
 
 The system has two main components:
-  - **Notification definitions**: Describe notification properties (title,
-    message, severity, etc.), the triggering condition (filtering function), and
-    the monitored file(s).
-  - **Backends (targets)**: When a matching string is found, a notification is
-    sent to one or more backends, which can log to the container, a file, or an
-    external service.
+  - **Notification definitions**: Define how notifications are generated: their
+    title, message, severity, triggering condition (filter function), and the
+    files being monitored.
+  - **Notification targets**: Define where notifications are sent once triggered
+    (for example, to stdout, a file, or an external service).
 
 Two types of files can be monitored:
   - **Log files**: Files with new content appended.
@@ -703,41 +704,44 @@ Two types of files can be monitored:
 
 #### Notification Definition
 
-A notification definition consists of multiple files in a directory under
-`/etc/logmonitor/notifications.d` within the container. For example, the
+A notification definition is represented by a directory under
+`/etc/logmonitor/notifications.d` inside the container. For example, the
 definition for `MYNOTIF` is stored in
 `/etc/logmonitor/notifications.d/MYNOTIF/`.
 
-The following table describes files part of the definition:
+Each definition may include the following files:
 
 | File     | Mandatory  | Description |
 |----------|------------|-------------|
-| `filter` | Yes        | Program (script or binary with executable permission) to filter log file messages. It is invoked with a log line as an argument and should exit with `0` on a match. Other values indicate no match. |
-| `title`  | Yes        | File containing the notification title. For dynamic content, it can be a program (script or binary with executable permission) invoked with the matched line, using its output as the title. |
-| `desc`   | Yes        | File containing the notification description or message. For dynamic content, it can be a program (script or binary with executable permission) invoked with the matched log line, using its output as the description. |
-| `level`  | Yes        | File containing the notification's severity level (`ERROR`, `WARNING`, or `INFO`). For dynamic content, it can be a program (script or binary with executable permission) invoked with the matched log line, using its output as the severity. |
-| `source` | Yes        | File containing the absolute path(s) to monitored file(s), one per line. Prepend `status:` for status file; `log:` or no prefix indicates a log file. |
+| `filter` | Yes        | Executable program (script or binary) that determines whether a log line matches. It is invoked with the log line as its argument and must exit with code 0 to indicate a match. Any other exit code means no match. |
+| `title`  | Yes        | File containing the notification title. If executable, it is invoked with the matched log line as its argument, and its standard output is used as the notification title. |
+| `desc`   | Yes        | File containing the notification description or message. If executable, it is invoked with the matched log line as its argument, and its standard output is used as the notification description. |
+| `level`  | Yes        | File containing the severity level (`ERROR`, `WARNING`, or `INFO`). If executable, it is invoked with the matched log line as its argument, and its standard output is used as the notification severity. |
+| `source` | Yes        | File listing the absolute path(s) to the monitored file(s), one per line. Prefix paths with `status:` for status files. Use `log:` or no prefix for log files. |
+| `target` | No         | File listing the notification targets to use, one per line. If omitted, the notification is sent to all available targets. |
 
-#### Notification Backend
+#### Notification Target
 
-A notification backend is defined in a directory under
+A notification target defines where and how a notification is delivered once
+triggered. Each target is represented by a directory under
 `/etc/cont-logmonitor/targets.d`. For example, the `stdout` backend is in
 `/etc/cont-logmonitor/target.d/stdout/`.
 
-The following table describes the files:
+Each target may contain the following files:
 
 | File         | Mandatory  | Description |
 |--------------|------------|-------------|
-| `send`       | Yes        | Program (script or binary with executable permission) that sends the notification, invoked with the notification's title, description, and severity level as arguments. |
-| `debouncing` | No         | File containing the minimum time (in seconds) before sending the same notification again. A value of `0` means the notification is sent once. If missing, no debouncing occurs. |
+| `send`       | Yes        | Executable program (script or binary) responsible for delivering the notification. It is invoked with the notification’s title, description, and severity as arguments. |
+| `debouncing` | No         | File specifying the minimum interval (in seconds) before the same notification can be sent again. A value of `0` means it is sent only once. If missing, no debouncing is applied. |
 
 The baseimage includes these notification backends:
 
-| Backend  | Description | Debouncing time |
-|----------|-------------|-----------------|
-| `stdout` | Displays a message to standard output, visible in the container's log, in the format `{LEVEL}: {TITLE} {MESSAGE}`. | 21 600s (6 hours) |
+| Backend     | Description | Debouncing time |
+|-------------|-------------|-----------------|
+| `stdout`    | Displays a message to standard output, visible in the container's log, in the format `{LEVEL}: {TITLE} {MESSAGE}`. | 21 600s (6 hours) |
 {% if baseimage.gui %}
-| `yad`    | Displays the notification in a window visible in the application's GUI. | Infinite |
+| `yad`       | Displays the notification in a window visible in the application's GUI. | Infinite |
+| `web-notif` | When web notifications are enabled, the notification is displayed by the user's browser. | None |
 {% endif %}
 {% if baseimage.gui %}
 
@@ -836,8 +840,9 @@ The security of the VNC password depends on:
   - The communication channel (encrypted or unencrypted).
   - The security of host access.
 
-When using a VNC password, enable a secure connection to prevent sending the
-password in clear text over an unencrypted channel.
+When using a VNC password, configure the container with secure web access
+(HTTPS) to prevent sending the password in clear text over an unencrypted
+channel.
 
 Unauthorized users with sufficient host privileges can retrieve the password by:
 
@@ -852,19 +857,6 @@ Unauthorized users with sufficient host privileges can retrieve the password by:
 > Framebuffer Protocol [RFC](https://tools.ietf.org/html/rfc6143) (see section
 > [7.2.2](https://tools.ietf.org/html/rfc6143#section-7.2.2)).
 
-#### DH Parameters
-
-Diffie-Hellman (DH) parameters define how the [DH key-exchange] is performed.
-More details are available on the [OpenSSL Wiki].
-
-DH parameters are stored in the PEM-encoded file at `/config/certs/dhparam.pem`
-within the container. If missing, 2048-bit DH parameters are generated
-automatically, which is a one-time operation that may significantly increase
-container startup time.
-
-[DH key-exchange]: https://en.wikipedia.org/wiki/Diffie%E2%80%93Hellman_key_exchange
-[OpenSSL Wiki]: https://wiki.openssl.org/index.php/Diffie_Hellman
-
 #### Web Authentication
 
 Access to the application's GUI via a web browser can be protected with a login
@@ -875,8 +867,8 @@ variable to `1`. See the [Environment Variables](#environment-variables) section
 for details on configuring environment variables.
 
 > [!IMPORTANT]
-> Web authentication requires a secure connection to be enabled. See
-> [Security](#security) for details.
+> Web authentication requires the container to be configured with secure web
+> access (HTTPS). See [Security](#security) for details.
 
 ##### Configuring User Credentials
 
@@ -1017,6 +1009,32 @@ server {
 
 ```
 
+### Automatic Clipboard Sync
+
+When the container is accessed through a web browser, automatic clipboard
+synchronization enables seamless sharing of clipboard contents between the host
+system and the application running inside the container. This makes it possible
+to copy and paste text or data directly between the two environments without
+manual transfer steps.
+
+This functionality is not available when using VNC clients and is supported only
+in browsers based on the Chromium engine, such as Google Chrome and Microsoft
+Edge.
+
+Clipboard synchronization operates transparently once permission has been
+granted by the browser. Depending on browser implementation, a prompt may appear
+the first time clipboard access is requested.
+
+> [!IMPORTANT]
+> Web browsers only allow access to the clipboard in secure contexts (HTTPS).
+> This means the container must be configured with secure web access. See
+> [Security](#security) for details.
+
+> [!TIP]
+> If automatic clipboard synchronization is not available, text can still be
+> copied and pasted using the side panel clipboard, which provides manual
+> clipboard access between the host and the container.
+
 ### Web Audio
 
 The baseimage supports streaming audio from applications using PulseAudio,
@@ -1054,6 +1072,25 @@ any folders mapped to the container.
 The `WEB_FILE_MANAGER_DENIED_PATHS` environment variable defines which paths are
 explicitly denied access by the file manager. A denied path takes precedence
 over an allowed one.
+
+### Web Notifications
+
+The baseimage includes support for notifications sent through the web browser.
+Any desktop notification generated by your application is forwarded to the
+browser, which then displays it as a native notification on the user's system.
+
+Enable the web notification service by setting `WEB_NOTIFICATION` to `1`. See
+the [Environment Variables](#environment-variables) section for details on
+configuring environment variables.
+
+> [!IMPORTANT]
+> Web browsers only allow notifications in secure contexts (HTTPS). This means
+> the container must be configured with secure web access. See
+> [Security](#security) for details.
+
+> [!TIP]
+> Make sure `libnotify` is installed along with your application. This is
+> usually the library used to send desktop notifications.
 
 ### Application Icon
 
@@ -1109,6 +1146,27 @@ Linux software repositories.
 
 > [!NOTE]
 > Dark mode is supported for Qt5 and Qt6.
+
+### GPU Acceleration Support
+
+This Docker base image supports GPU acceleration, enabling hardware-accelerated
+OpenGL rendering for applications using the GLX extension and improving the X
+server’s overall rendering performance within the container.
+
+This feature requires open-source kernel drivers on the host system, such as
+`amdgpu` for AMD GPUs, `i915` for Intel GPUs, or `nouveau` for NVIDIA GPUs, to
+support the Direct Rendering Infrastructure (DRI3) and Generic Buffer Management
+(GBM). Proprietary drivers, such as NVIDIA's, are not supported.
+
+To enable GPU acceleration, the host must have compatible open-source kernel
+drivers installed, and the GPU device `/dev/dri` must be exposed to the
+container. For example, this is done by adding the `--device /dev/dri`
+argument to the `docker run` command.
+
+> [!NOTE]
+> To enable your application to use hardware acceleration, additional software,
+> such as Mesa or libva drivers, may need to be installed within the container
+> alongside your application.
 {% endif %}
 
 ### Tips and Best Practices
