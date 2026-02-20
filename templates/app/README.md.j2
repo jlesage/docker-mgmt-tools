@@ -26,7 +26,8 @@ side, or via any VNC client.
 {% endif %}
 
 > [!NOTE]
-> This Docker container is entirely unofficial and not made by the creators of {{ app.friendly_name }}.
+> This Docker container is entirely unofficial and not made by the creators of
+> {{ app.friendly_name }}.
 
 ---
 
@@ -489,6 +490,9 @@ for details on configuring environment variables.
 > Web authentication requires the container to be configured with secure web
 > access (HTTPS). See [Security](#security) for details.
 
+> [!NOTE]
+> This feature is not available to VNC clients.
+
 #### Configuring Users Credentials
 
 User credentials can be configured in two ways:
@@ -554,17 +558,14 @@ server {
 
 	location / {
 		proxy_pass http://docker-{{ app.name }};
-	}
-
-	location /websockify {
-		proxy_pass http://docker-{{ app.name }};
 		proxy_http_version 1.1;
 		proxy_set_header Upgrade $http_upgrade;
 		proxy_set_header Connection $connection_upgrade;
-		proxy_read_timeout 86400;
+		proxy_buffering off;
+		proxy_read_timeout 86400s;
+		proxy_send_timeout 86400s;
 	}
 }
-
 ```
 
 ### Routing Based on URL Path
@@ -596,19 +597,17 @@ server {
 	location = /{{ app.name }} {return 301 $scheme://$http_host/{{ app.name }}/;}
 	location /{{ app.name }}/ {
 		proxy_pass http://docker-{{ app.name }}/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection $connection_upgrade;
+		proxy_buffering off;
+		proxy_read_timeout 86400s;
+		proxy_send_timeout 86400s;
 		# Uncomment the following line if your Nginx server runs on a port that
 		# differs from the one seen by external clients.
 		#port_in_redirect off;
-		location ~ ^/{{ app.name }}/(websockify(-.*)?) {
-                        proxy_pass http://docker-{{ app.name }}/$1;
-			proxy_http_version 1.1;
-			proxy_set_header Upgrade $http_upgrade;
-			proxy_set_header Connection $connection_upgrade;
-			proxy_read_timeout 86400;
-		}
 	}
 }
-
 ```
 
 ## Web Control Panel
@@ -627,6 +626,7 @@ window to open it.
 | **Fullscreen** icon | Toggle fullscreen mode for the browser window. |
 | **Hand** icon| Allows dragging/moving the application window. Visible only when **Scaling Mode** is *None* and **Clip to Window** is enabled.
 | **Folder** icon | Opens the intgegrated file browser. Visible only when the [file manager](#web-file-manager) is enabled. |
+| **Terminal** icon | Opens the integrated terminal. Visibile only when the [terminal](#web-terminal) is enabled. |
 | **Clipboard** text box| Mirrors the application’s clipboard. Any text typed or pasted here is sent to the application, and text copied inside the application automatically appears here. Hidden when [automatic clipboard synchronization](#automatic-clipboard-sync) is active. |
 | **Clear** button | Clears the clipboard. Hidden when [automatic clipboard synchronization](#automatic-clipboard-sync) is active. |
 | **Audio** icon | Mutes or unmutes audio streaming from the container. Visible only when [audio support](#web-audio) is enabled. |
@@ -666,6 +666,9 @@ the first time clipboard access is requested.
 > [control panel](#web-control-panel), which provides manual clipboard access
 > between the host and the container.
 
+> [!NOTE]
+> This feature is not available to VNC clients.
+
 ## Web Audio
 
 The container supports streaming audio from the application, played through the
@@ -684,6 +687,9 @@ configuring environment variables.
 
 Control of the audio stream (mute, unmute and volume) is done via the
 [control panel](#web-control-panel).
+
+> [!NOTE]
+> This feature is not available to VNC clients.
 
 ## Web File Manager
 
@@ -708,6 +714,9 @@ The `WEB_FILE_MANAGER_DENIED_PATHS` environment variable defines which paths are
 explicitly denied access by the file manager. A denied path takes precedence
 over an allowed one.
 
+> [!NOTE]
+> This feature is not available to VNC clients.
+
 ## Web Notifications
 
 The container includes support for notifications sent through the web browser.
@@ -722,6 +731,30 @@ configuring environment variables.
 > Web browsers only allow notifications in secure contexts (HTTPS). This means
 > the container must be configured with secure web access. See
 > [Security](#security) for details.
+
+> [!NOTE]
+> This feature is not available to VNC clients.
+
+### Web Terminal
+
+The container includes a web-based terminal, allowing users to easily obtain
+shell access to the running container through a web browser.
+
+Enable the web terminal by setting `WEB_TERMINAL` to `1`. See the
+[Environment Variables](#environment-variables) section for details on
+configuring environment variables.
+
+> [!IMPORTANT]
+> For security reasons, the shell runs as a non-privileged user. As a result,
+> commands that require root privileges cannot be executed.
+
+> [!IMPORTANT]
+> To prevent sensible information from leaking over the network, it is strongly
+> recommended to configure the container with secure web access. See
+> [Security](#security) for details.
+
+> [!NOTE]
+> This feature is not available to VNC clients.
 
 ## GPU Acceleration Support
 
@@ -739,6 +772,7 @@ To enable GPU acceleration, the host must have compatible open-source kernel
 drivers installed, and the GPU device `/dev/dri` must be exposed to the
 container. For example, this is done by adding the `--device /dev/dri`
 argument to the `docker run` command.
+
 {% endif %}
 ## Shell Access
 
