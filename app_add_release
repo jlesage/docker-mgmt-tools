@@ -145,7 +145,7 @@ if [ -d "$APPDIR"/.git ]; then
 fi
 
 # Update the unRAID template.
-"$SCRIPTDIR"/render_templates.sh "$APPDIR" -u
+"$SCRIPTDIR"/render_templates.sh -u "$APPDIR"
 if [ $? -eq 0 ]; then
     # Commit unRAID template.
 
