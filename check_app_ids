@@ -1,0 +1,83 @@
+#!/bin/sh
+
+set -e # Exit immediately if a command exits with a non-zero status.
+set -u # Treat unset variables as an error.
+
+die() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    exit 1
+}
+
+is_valid_id() {
+    if echo "$1" | grep -q '[^0-9]'; then
+        false
+    else
+        true
+    fi
+}
+
+get_app_id() {
+    sed -n 's/^[[:space:]]\+id:[[:space:]]\(.*\)$/\1/p' "$1"
+}
+
+get_app_with_id() {
+    for appdef in $(ls "$DOCKERAPPS_ROOT"/docker-*/appdefs.yml); do
+        cur_id="$(get_app_id "$appdef")"
+        if [ "$1" = "$cur_id" ]; then
+            echo "$(basename "$(dirname "$appdef")")"
+        fi
+    done
+}
+
+[ -n "$DOCKERAPPS_ROOT" ] || die "DOCKERAPPS_ROOT not defined."
+
+last_id=0
+all_ids=
+invalid_ids=
+unassigned_ids=
+
+for appdef in $(ls "$DOCKERAPPS_ROOT"/docker-*/appdefs.yml); do
+    cur_id="$(get_app_id "$appdef")"
+
+    if is_valid_id "$cur_id"; then
+        all_ids="$all_ids $cur_id"
+        [ "$cur_id" -lt "$last_id" ] || last_id="$cur_id"
+    elif [ "$cur_id" = "XX" ]; then
+        unassigned_ids="$unassigned_ids $cur_id"
+    else
+        invalid_ids="$invalid_ids $cur_id"
+    fi
+done
+
+# Print last used ID.
+echo "Last used ID: $last_id ($(get_app_with_id "$last_id"))"
+
+# Print unassigned.
+unassigned_ids="$(echo "$unassigned_ids" | tr ' ' '\n' | sort -n | uniq | xargs)"
+[ -z "$unassigned_ids" ] || {
+    echo ""
+    echo "Unassigned IDs:"
+    for id in $unassigned_ids; do
+        echo "  -> $id: $(get_app_with_id "$id" tr '\n' ' ' | xargs | sed 's/ /, /g')"
+    done
+}
+
+# Print duplicates.
+duplicates="$(echo "$all_ids" | tr ' ' '\n' | sort -n | uniq -d | xargs)"
+[ -z "$duplicates" ] || {
+    echo ""
+    echo "Duplicate IDs:"
+    for id in $duplicates; do
+        echo "  -> $id: $(get_app_with_id "$id" tr '\n' ' ' | xargs | sed 's/ /, /g')"
+    done
+}
+
+# Print invalids.
+invalid_ids="$(echo "$invalid_ids" | tr ' ' '\n' | sort -n | uniq | xargs)"
+[ -z "$invalid_ids" ] || {
+    echo ""
+    echo "Invalid IDs:"
+    for id in $invalid_ids; do
+        echo "  -> $id: $(get_app_with_id "$id" tr '\n' ' ' | xargs | sed 's/ /, /g')"
+    done
+}
