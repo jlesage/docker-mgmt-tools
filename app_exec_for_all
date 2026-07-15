@@ -1,0 +1,68 @@
+#!/bin/sh
+
+usage() {
+    echo "usage: $(basename "$0") [--gui-apps-only] CMD [ARGS...]
+
+For each docker container application, execute the specified command.
+
+Arguments:
+    CMD                        Path to the executable to run for each
+                               application.
+"
+}
+
+die() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    exit 1
+}
+
+die_usage() {
+    [ -z "$*" ] || echo "ERROR: $*"
+    echo
+    usage
+    exit 1
+}
+
+promptyn() {
+    echo -n "$1 (y/n)?"
+    old_stty_cfg=$(stty -g)
+    stty raw -echo ; answer=$(head -c 1) ; stty $old_stty_cfg
+    echo
+    echo "$answer" | grep -iq "^y"
+}
+
+GUI_APPS_ONLY=false
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --gui-apps-only)
+            GUI_APPS_ONLY=true
+            ;;
+        *) break ;;
+    esac
+    shift
+done
+
+CMD="$1"
+[ -n "$CMD" ] || die_usage "Command to execute is missing."
+shift
+
+[ -n "$DOCKERAPPS_ROOT" ] || die "DOCKERAPPS_ROOT not defined."
+
+STDIN=/proc/$$/fd/0
+
+find "$DOCKERAPPS_ROOT" -maxdepth 1 -type d -name "docker-*" | while read DIR; do
+    [ -f "$DIR/appdefs.yml" ] || continue
+    if $GUI_APPS_ONLY; then
+        grep -q 'gui_type: x11' "$DIR/appdefs.yml" || continue
+    fi
+    echo "#########################################"
+    echo "# $(basename "$DIR")"
+    echo "#########################################"
+    # Normally, the CMD inherits current stdin, which is a pipe. Set the stdin
+    # of the command as it may need the tty.
+    (cd "$DIR" && $CMD "$@" <$STDIN)
+    if [ "$?" -ne 0 ] && ! promptyn 'Command failed.  Continue to next application' <$STDIN; then
+        break
+    fi
+done
