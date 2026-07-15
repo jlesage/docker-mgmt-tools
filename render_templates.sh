@@ -1,13 +1,10 @@
 #!/bin/sh
-#
-# https://github.com/alexlafroscia/yaml-merge
-# sudo npm install -g @alexlafroscia/yaml-merge
-#
 
 set -e # Exit immediately if a command exits with a non-zero status.
 set -u # Treat unset variables as an error.
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+SCRIPT="$SCRIPT_DIR"/"$(basename "$0")"
 FORCE_LIST="environment_variable,volume,port,change,link,section,release,overview,device,unsupported_volume,extra_param"
 
 usage() {
@@ -218,11 +215,12 @@ generate_app_license() {
 generate_app_all() {
     case "$2" in
         all)
-            generate_app_readme "$1"
-            generate_app_dockerhub_readme "$1"
-            generate_app_unraid_template "$1"
-            generate_app_github_issue_templates "$1"
-            generate_app_license "$1"
+            printf "%s\n%s\n%s\n%s\n%s" "-r" "-d" "-u" "-g" "-l" \
+            | parallel \
+                --halt soon,fail=1 \
+                "$SCRIPT" \
+                "{}" \
+                "$1"
             ;;
         readme)
             generate_app_readme "$1"
@@ -305,40 +303,55 @@ WORKPATH=
 ASSET_TO_GENERATE=all
 
 # Parse arguments.
-while [ "$#" -ne 0 ]
-do
+# The final goal is to keep the original $@, without the last argument. We want
+# to pass the original arguments to call again this script.
+if true; then
+    i=1
+
+    while [ "$i" -lt "$#" ]; do
+        case "$1" in
+            --debug) DEBUG=1 ;;
+            -b) DO_BACKUP=true ;;
+            -r) ASSET_TO_GENERATE=readme ;;
+            -d) ASSET_TO_GENERATE=dockerhub_readme ;;
+            -u) ASSET_TO_GENERATE=unraid_template ;;
+            -g) ASSET_TO_GENERATE=github_issue_templates ;;
+            -l) ASSET_TO_GENERATE=license ;;
+            -h)
+                usage
+                exit 1
+                ;;
+            -*)
+                die "Unkown option: $1"
+                ;;
+            *)
+                die "Unexpected argument: $1"
+                ;;
+        esac
+
+        set -- "$@" "$1"
+        shift
+        i=$((i + 1))
+    done
+
+    # Last argument should be the workpath.
     case "$1" in
-        --debug) DEBUG=1 ;;
-        -b) DO_BACKUP=true ;;
-        -r) ASSET_TO_GENERATE=readme ;;
-        -d) ASSET_TO_GENERATE=dockerhub_readme ;;
-        -u) ASSET_TO_GENERATE=unraid_template ;;
-        -g) ASSET_TO_GENERATE=github_issue_templates ;;
-        -l) ASSET_TO_GENERATE=license ;;
-        -h)
-            usage
-            exit 1
-            ;;
         -*)
-            die "Unkown option: $1"
+            die "Unexpected argument: $1"
             ;;
         *)
-            if [ -z "$WORKPATH" ]; then
-                WORKPATH="$1"
-            else
-                die "Unexpected argument: $1"
-            fi
+            WORKPATH="$1"
+            [ -n "$WORKPATH" ] || die "Invalid workpath."
+            WORKPATH="$(realpath "$1")"
             ;;
     esac
-    shift
-done
 
-if [ -z "$WORKPATH" ]; then
-    die "Workpath not set."
+    # Removes what was originally the last argument
+    shift
 fi
 
-YAML_MERGE="$SCRIPT_DIR"/yaml-merge/yaml-merge
-[ -e "$YAML_MERGE" ] || die "yaml-merge not found"
+YAML_MERGE="$SCRIPT_DIR"/yaml-merger/yaml-merger
+[ -e "$YAML_MERGE" ] || die "$(basename "$YAML_MERGE") not found"
 [ -n "$(which j2)" ] || die "j2 not found"
 
 # Handle the provided WORKPATH.
@@ -357,26 +370,22 @@ elif [ -d "$WORKPATH" ]; then
     elif [ -f "$WORKPATH/baseimagedefs.yml" ]; then
         generate_baseimage_all "$WORKPATH/baseimagedefs.yml" "$ASSET_TO_GENERATE"
     else
-        DATA_SOURCE_FILE_FOUND="$(mktemp)"
-        echo 0 > "$DATA_SOURCE_FILE_FOUND"
-        ls "$WORKPATH"/docker-*/baseimagedefs.yml 2>/dev/null | while read -r FILE; do
-            generate_baseimage_all "$FILE" "$ASSET_TO_GENERATE"
-            echo 1 > "$DATA_SOURCE_FILE_FOUND"
-        done
-        ls "$WORKPATH"/docker-*/appdefs.yml 2>/dev/null | while read -r FILE; do
-            generate_app_all "$FILE" "$ASSET_TO_GENERATE"
-            echo 1 > "$DATA_SOURCE_FILE_FOUND"
-        done
-        FOUND="$(cat "$DATA_SOURCE_FILE_FOUND")"
-        rm "$DATA_SOURCE_FILE_FOUND"
-        if [ "$FOUND" -eq 0 ]; then
-            die "No appdefs.yml/baseimagedefs.yml file found."
-        fi
+        set +e
+
+        find "$WORKPATH"/docker-*/appdefs.yml \
+            "$WORKPATH"/docker-*/baseimagedefs.yml \
+            -maxdepth 0 \
+            -type f \
+            | parallel \
+                --halt soon,fail=1 \
+                "$SCRIPT" \
+                "$@"
+
+        [ "$?" -eq 0 ] || die "Template(s) rendering failed."
+        exit 0
     fi
 else
     die "File or directory not found: $WORKPATH."
 fi
-
-echo "Done!"
 
 # vim:ft=sh:ts=4:sw=4:et:sts=4
