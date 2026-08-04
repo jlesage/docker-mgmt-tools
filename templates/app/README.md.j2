@@ -510,6 +510,14 @@ for details on configuring environment variables.
 > Web authentication requires the container to be configured with secure web
 > access (HTTPS). See [Security](#security) for details.
 
+> [!CAUTION]
+> If a reverse proxy is used and it cannot use HTTPS to the container backend,
+> set `WEB_AUTHENTICATION_ALLOW_INSECURE=1` so web authentication can run with
+> `SECURE_CONNECTION=0`. This is a last resort: credentials and session tokens
+> may travel in cleartext between the proxy and the container. Do not publish
+> the container web port on an untrusted network, and ensure browsers reach the
+> application only over HTTPS through the reverse proxy.
+
 > [!NOTE]
 > This feature is not available to VNC clients.
 
