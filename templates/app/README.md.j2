@@ -521,6 +521,17 @@ for details on configuring environment variables.
 > [!NOTE]
 > This feature is not available to VNC clients.
 
+After a successful login, a token is issued and stored in the browser. The token
+remains valid for the duration set by `WEB_AUTHENTICATION_TOKEN_VALIDITY_TIME`
+(default: 24 hours). During that time, the user can access the GUI without
+logging in again.
+
+> [!NOTE]
+> Login sessions are intentionally not persisted across container restarts. When
+> the container (or the web authentication service) restarts, all existing
+> tokens become invalid and users must log in again. This is by design: session
+> state is kept in memory and cookie signing keys are regenerated on each start.
+
 #### Configuring Users Credentials
 
 User credentials can be configured in two ways:
@@ -655,11 +666,12 @@ window to open it.
 | **Hand** icon| Allows dragging/moving the application window. Visible only when **Scaling Mode** is *None* and **Clip to Window** is enabled.
 | **Folder** icon | Opens the integrated file browser. Visible only when the [file manager](#web-file-manager) is enabled. |
 | **Terminal** icon | Opens the integrated terminal. Visibile only when the [terminal](#web-terminal) is enabled. |
-| **Clipboard** text box| Mirrors the application’s clipboard. Any text typed or pasted here is sent to the application, and text copied inside the application automatically appears here. Hidden when [automatic clipboard synchronization](#automatic-clipboard-sync) is active. |
-| **Clear** button | Clears the clipboard. Hidden when [automatic clipboard synchronization](#automatic-clipboard-sync) is active. |
+| **Clipboard** text box| Mirrors the application’s clipboard. Any text typed or pasted here is sent to the application, and text copied inside the application automatically appears here. Hidden when [host clipboard sync](#host-clipboard-sync) is active. |
+| **Clear** button | Clears the clipboard. Hidden when [host clipboard sync](#host-clipboard-sync) is active. |
 | **Audio** icon | Mutes or unmutes audio streaming from the container. Visible only when [audio support](#web-audio) is enabled. |
 | **Volume** slider| Controls the playback volume of the audio streaming from the container. Visible only when [audio support](#web-audio) is enabled. |
 | **Clip to Window** toggle | Only applies when **Scaling Mode** is *None*. When disabled, scrollbars appear if the application window is larger than the browser window. When enabled, no scrollbars are shown and the hand icon is used to pan. |
+| **Sync with Host Clipboard** toggle | Enables synchronization between the host system clipboard and the application. Actual availability still depends on the browser. Visible only when [host clipboard sync](#host-clipboard-sync) support is enabled. |
 | **Scaling Mode** dropdown | Controls how the application window is scaled to fit the browser. **None** – no scaling, the application window keeps its original size. **Local Scaling** – the image is scaled in the browser (application window size unchanged). **Remote Scaling** – the application window inside the container is automatically resized to match the browser window size. |
 | **Quality** slider | Adjusts image quality. Moving the slider left reduces bandwidth at the cost of visual quality. |
 | **Compression** slider | Adjusts compression level applied to screen updates. Moving the slider right increases compression, which lowers bandwidth but raises CPU usage. |
@@ -667,21 +679,30 @@ window to open it.
 | **Application version** label | Displays the version of {{ app.friendly_name }} integrated into Docker image. |
 | **Docker image** version label | Displays the version of the Docker image currently running. |
 
-## Automatic Clipboard Sync
+## Host Clipboard Sync
 
-When the container is accessed through a web browser, automatic clipboard
-synchronization enables seamless sharing of clipboard contents between the host
-system and the application running inside the container. This makes it possible
-to copy and paste text or data directly between the two environments without
-manual transfer steps.
+Host clipboard sync keeps the system clipboard on the machine running the
+browser in sync with the application inside the container. When active, copy
+and paste work directly between the host and the app without using the control
+panel clipboard.
 
-This functionality is not available when using VNC clients and is supported only
-in browsers based on the Chromium engine, such as Google Chrome and Microsoft
-Edge.
+This is different from the control panel clipboard, which only mirrors the
+application's clipboard so text can be transferred manually.
 
-Clipboard synchronization operates transparently once permission has been
-granted by the browser. Depending on browser implementation, a prompt may appear
-the first time clipboard access is requested.
+Host clipboard sync is not available when using VNC clients and is supported
+only in browsers based on the Chromium engine, such as Google Chrome and
+Microsoft Edge.
+
+It operates transparently once permission has been granted by the browser.
+Depending on browser implementation, a prompt may appear the first time
+clipboard access is requested.
+
+Support is enabled by default via the `WEB_HOST_CLIPBOARD_SYNC` environment
+variable. Setting it to `1` only enables support on the container side; the
+feature still depends on the browser (engine, secure context, and clipboard
+permissions). Setting it to `0` disables the feature for all sessions. When
+support is enabled, users can also turn host clipboard sync on or off from the
+web interface settings for their own browser.
 
 > [!IMPORTANT]
 > Web browsers only allow access to the clipboard in secure contexts (HTTPS).
@@ -689,10 +710,10 @@ the first time clipboard access is requested.
 > [Security](#security) for details.
 
 > [!TIP]
-> If automatic clipboard synchronization is not available, text can still be
-> copied and pasted using the clipboard of the
-> [control panel](#web-control-panel), which provides manual clipboard access
-> between the host and the container.
+> If host clipboard sync is not available or has been disabled, text can still
+> be copied and pasted using the clipboard of the
+> [control panel](#web-control-panel), which provides manual access to the
+> application's clipboard.
 
 > [!NOTE]
 > This feature is not available to VNC clients.
