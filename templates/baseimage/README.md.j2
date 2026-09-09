@@ -23,7 +23,6 @@ This baseimage is available for multiple Linux distributions:
 | [Alpine 3.22]      | alpine-3.22-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.22-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
 | [Alpine 3.23]      | alpine-3.23-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.23-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
 | [Alpine 3.24]      | alpine-3.24-vX.Y.Z    | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/alpine-3.24-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)  |
-| [Debian 11]        | debian-11-vX.Y.Z      | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/debian-11-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)    |
 | [Debian 12]        | debian-12-vX.Y.Z      | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/debian-12-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)    |
 | [Debian 13]        | debian-13-vX.Y.Z      | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/debian-13-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#)    |
 | [Ubuntu 18.04 LTS] | ubuntu-18.04-vX.Y.Z   | [![](https://img.shields.io/docker/image-size/jlesage/{{ baseimage.name }}/ubuntu-18.04-{% if baseimage.gui %}v4{% else %}v3{% endif %}?style=for-the-badge)](#) |
@@ -50,7 +49,6 @@ details.
 [Alpine 3.22]: https://alpinelinux.org/posts/Alpine-3.22.0-released.html
 [Alpine 3.23]: https://alpinelinux.org/posts/Alpine-3.23.0-released.html
 [Alpine 3.24]: https://alpinelinux.org/posts/Alpine-3.24.0-released.html
-[Debian 11]: https://www.debian.org/releases/bullseye/
 [Debian 12]: https://www.debian.org/releases/bookworm/
 [Debian 13]: https://www.debian.org/releases/trixie/
 [Ubuntu 18.04 LTS]: http://releases.ubuntu.com/18.04/
@@ -348,6 +346,30 @@ uid=1000(myuser) gid=1000(myuser) groups=1000(myuser),4(adm),24(cdrom),27(sudo),
 
 Use the `uid` (user ID) and `gid` (group ID) values to configure the container.
 
+#### Application User
+
+The application runs as the Linux user `app`. This user and its primary group
+are created during container startup. Their attributes come from environment
+variables:
+
+  - User ID: `USER_ID`
+  - Group ID: `GROUP_ID`
+  - Home directory: `HOME` (defaults to `/config`)
+  - Supplementary groups: `SUP_GROUP_IDS`, merged with `SUP_GROUP_IDS_INTERNAL`
+    and any `SUP_GROUP_IDS_INTERNAL_*` variables
+
+`app` is a reserved name. It is defined like any other account, under
+`/etc/cont-users.d/app` and `/etc/cont-groups.d/app`. Do not create another
+user or group named `app`.
+
+Because `USER_ID` and `GROUP_ID` are chosen to match the host, they may collide
+with IDs of other accounts already defined in the container. For example,
+`GROUP_ID=100` on Debian, where the `users` group is `100`. The `app` account
+allows this: two names may share the same numeric ID.
+
+Supplementary group IDs that do not already exist in the container are created
+as `grp<ID>` so membership can be recorded in `/etc/group`.
+
 #### System Files
 
 Some applications might expect certain Linux users or groups to be present in
@@ -355,7 +377,8 @@ system files `/etc/passwd` and `/etc/group`, which stores information about user
 accounts and groups respectively.
 
 These users or groups can be defined so that they are created automatically
-in the system during container initialization.
+in the system during container initialization. The `app` user and group shipped
+by this baseimage use the same mechanism.
 
 Users are defined under `/etc/cont-users.d/` in the container, while groups are
 defined under `/etc/cont-groups.d/`. Each entry has its own directory named
@@ -372,6 +395,7 @@ The following files can be defined for a group:
 | `name`                 | String           | Overrides the group name. The directory name is used if omitted. | None |
 | `disabled`             | Boolean          | Specifies whether the group is disabled and should not be created. | `FALSE` |
 | `id`                   | Unsigned integer | Specifies the numeric ID of the group. | None |
+| `allow_duplicate_id`   | Boolean          | Allows the numeric ID to match an existing group. Names must still be unique. | `FALSE` |
 
 The following files can be defined for a user:
 
@@ -384,6 +408,8 @@ The following files can be defined for a user:
 | `gid`                  | Unsigned integer | Specifies the primary group ID of the user. | None |
 | `home`                 | String           | Specifies the user's home directory. | `/dev/null` |
 | `grps`                 | String           | Specifies the list of groups the user belongs to, with one group name per line. | None |
+| `gids`                 | String           | Specifies numeric supplementary group IDs, one per line. | None |
+| `allow_duplicate_id`   | Boolean          | Allows the numeric ID to match an existing user. Names must still be unique. | `FALSE` |
 | `password`             | String           | Specifies the user's password. | None |
 | `password_hash`        | String           | Specifies the user's password hash in the format `$id$salt$hash`, as produced by `mkpasswd`. | None |
 
